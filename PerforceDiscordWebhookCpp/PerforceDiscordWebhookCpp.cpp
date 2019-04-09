@@ -13,7 +13,7 @@
 #pragma comment(lib, "libsupp.a")
 #endif
 
-int main()
+int main(int argc)
 {
 	ClientUser ui;
 	ClientApi client;
@@ -27,11 +27,13 @@ int main()
 	// Connect to server
 
 	client.Init(&e);
-	// char    *argv1[] = { (char*)"-a" };
-	// client.SetArgv(1, argv1);
-	// client.Run("login", &ui);
 
-	std::cout << client.GetPassword().Text() << std::endl;
+	if (argc > 1)
+	{
+		char *argv1[] = { (char*)"-a" };
+		client.SetArgv(1, argv1);
+		client.Run("login", &ui);
+	}
 
 	if (e.Test())
 	{
@@ -40,10 +42,9 @@ int main()
 		return 1;
 	}
 
-
-	char    *argv[] = {  (char*)"-l", (char*)"-m", (char*)"5", (char*)"-s", (char*)"submitted", (char*)"-t" };
-	int     argc = 6;
-	client.SetArgv(argc, argv);
+	char *argv[] = {  (char*)"-l", (char*)"-m", (char*)"5", (char*)"-s", (char*)"submitted", (char*)"-t" };
+	int argc1 = 6;
+	client.SetArgv(argc1, argv);
 	client.Run("changes", &ui);
 	// Close connection
 
