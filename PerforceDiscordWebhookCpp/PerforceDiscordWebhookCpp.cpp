@@ -26,8 +26,8 @@ int main()
 
 	// Connect to server
 
-	client.Run("login");
 	client.Init(&e);
+	ui.CanAutoLoginPrompt();
 
 	std::cout << client.GetPassword().Text() << std::endl;
 
