@@ -1,4 +1,4 @@
-CC=gcc
+CC=g++
 LIBS = -LPerforceDiscordWebhookCpp/lib -lclient -lrpc -lsupp
 
 PerforceDiscordWebhookCpp: PerforceDiscordWebhookCpp/PerforceDiscordWebhookCpp.o
