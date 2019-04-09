@@ -26,6 +26,7 @@ int main()
 
 	// Connect to server
 
+	client.Run("login");
 	client.Init(&e);
 
 	std::cout << client.GetPassword().Text() << std::endl;
