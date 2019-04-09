@@ -1,4 +1,4 @@
 CC=gcc
 
-PerforceDiscordWebhookCpp: PerforceDiscordWebhookCpp.o
+PerforceDiscordWebhookCpp: PerforceDiscordWebhookCpp/PerforceDiscordWebhookCpp.o
 	$(CC) -o PerforceDiscordWebhookCpp PerforceDiscordWebhookCpp/PerforceDiscordWebhookCpp.o
