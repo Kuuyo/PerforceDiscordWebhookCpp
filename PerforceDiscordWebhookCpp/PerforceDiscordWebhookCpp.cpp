@@ -26,13 +26,9 @@ int main()
 
 	// Connect to server
 
-#ifndef _WIN32
-	std::cout << getenv("P4USER") << std::endl;
-#endif
-
 	client.Init(&e);
 
-	std::cout << client.GetUser().Text() << std::endl;
+	std::cout << client.GetPassword().Text() << std::endl;
 
 	if (e.Test())
 	{
