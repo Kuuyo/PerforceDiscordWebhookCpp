@@ -27,9 +27,9 @@ int main()
 	// Connect to server
 
 	client.Init(&e);
-	char    *argv1[] = { (char*)"-a" };
-	client.SetArgv(1, argv1);
-	client.Run("login", &ui);
+	// char    *argv1[] = { (char*)"-a" };
+	// client.SetArgv(1, argv1);
+	// client.Run("login", &ui);
 
 	std::cout << client.GetPassword().Text() << std::endl;
 
