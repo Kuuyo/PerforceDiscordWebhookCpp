@@ -13,10 +13,205 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="P4">
+      <UniqueIdentifier>{1950fcd1-882b-4d31-8284-1ef1d49b9880}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\base64.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\charcvt.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\charman.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\charset.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\clientapi.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\clientmerge.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\clientprog.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\clientresolvea.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\clientuser.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\datetime.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\debug.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\diff.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\diffmerge.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\echoctl.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\enviro.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\error.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\errorlog.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\errornum.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\filesys.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\handler.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\hostenv.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\i18napi.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\ident.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\ignore.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\keepalive.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\macfile.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\macutil.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\mangle.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\mapapi.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\md5.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\msgclient.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\msgdb.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\msgdm.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\msggraph.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\msgos.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\msgrpc.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\msgserver.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\msgsupp.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\netbuffer.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\netconnect.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\netportparser.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\ntmangle.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\ntservice.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\options.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\p4tags.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\pathsys.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\runcmd.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\serverhelperapi.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\sha1.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\sha256.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\signaler.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\spec.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\stdhdrs.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\strarray.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\strbuf.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\strdict.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\strops.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\strtable.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\strxml.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\threading.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\ticket.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\validate.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\vararray.h">
+      <Filter>P4</Filter>
+    </ClInclude>
+    <ClInclude Include="include\p4\web822.h">
+      <Filter>P4</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
