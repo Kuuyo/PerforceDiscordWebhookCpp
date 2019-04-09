@@ -5,8 +5,6 @@ VisualStudioVersion = 15.0.28307.329
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PerforceDiscordWebhookCpp", "PerforceDiscordWebhookCpp\PerforceDiscordWebhookCpp.vcxproj", "{946D6DBF-5010-4EE1-BE84-F212EDE2DE34}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HerokuFix", "StaticLib1\StaticLib1.vcxproj", "{811DB7DB-4D7D-4308-920F-347ABBF00B07}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -23,14 +21,6 @@ Global
 		{946D6DBF-5010-4EE1-BE84-F212EDE2DE34}.Release|x64.Build.0 = Release|x64
 		{946D6DBF-5010-4EE1-BE84-F212EDE2DE34}.Release|x86.ActiveCfg = Release|Win32
 		{946D6DBF-5010-4EE1-BE84-F212EDE2DE34}.Release|x86.Build.0 = Release|Win32
-		{811DB7DB-4D7D-4308-920F-347ABBF00B07}.Debug|x64.ActiveCfg = Debug|x64
-		{811DB7DB-4D7D-4308-920F-347ABBF00B07}.Debug|x64.Build.0 = Debug|x64
-		{811DB7DB-4D7D-4308-920F-347ABBF00B07}.Debug|x86.ActiveCfg = Debug|Win32
-		{811DB7DB-4D7D-4308-920F-347ABBF00B07}.Debug|x86.Build.0 = Debug|Win32
-		{811DB7DB-4D7D-4308-920F-347ABBF00B07}.Release|x64.ActiveCfg = Release|x64
-		{811DB7DB-4D7D-4308-920F-347ABBF00B07}.Release|x64.Build.0 = Release|x64
-		{811DB7DB-4D7D-4308-920F-347ABBF00B07}.Release|x86.ActiveCfg = Release|Win32
-		{811DB7DB-4D7D-4308-920F-347ABBF00B07}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
