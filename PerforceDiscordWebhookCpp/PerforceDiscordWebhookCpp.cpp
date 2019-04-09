@@ -1,6 +1,9 @@
-#include <iostream>
+﻿#include <iostream>
 
 #include "include/p4/clientapi.h"
+#include "include/json.hpp"
+
+using json = nlohmann::json;
 
 #ifdef _WIN32
 #pragma comment(lib, "libclient.lib")
@@ -13,9 +16,35 @@
 #pragma comment(lib, "libsupp.a")
 #endif
 
+class ClientUserEx : public ClientUser
+{
+public:
+	ClientUserEx() = default;
+	virtual ~ClientUserEx() {}
+
+	void OutputInfo(char level, const char *data);
+	void OutputText(const char *data, int length);
+	void ClearBuffer() { m_Data = ""; }
+
+	std::string GetData() const { return m_Data; }
+
+private:
+	std::string m_Data;
+};
+
+void ClientUserEx::OutputInfo(char, const char *data)
+{
+	m_Data += data;
+}
+
+void ClientUserEx::OutputText(const char *data, int)
+{
+	m_Data += data;
+}
+
 int main(int argc)
 {
-	ClientUser ui;
+	ClientUserEx ui;
 	ClientApi client;
 	StrBuf msg;
 	Error e;
@@ -28,12 +57,11 @@ int main(int argc)
 
 	client.Init(&e);
 
-	if (argc > 1)
-	{
-		char *argv1[] = { (char*)"-a" };
-		client.SetArgv(1, argv1);
-		client.Run("login", &ui);
-	}
+#ifndef _WIN32
+	char *loginArg[] = { (char*)"-a" };
+	client.SetArgv(1, loginArg);
+	client.Run("login", &ui);
+#endif
 
 	if (e.Test())
 	{
@@ -42,10 +70,30 @@ int main(int argc)
 		return 1;
 	}
 
-	char *argv[] = {  (char*)"-l", (char*)"-m", (char*)"5", (char*)"-s", (char*)"submitted", (char*)"-t" };
-	int argc1 = 6;
-	client.SetArgv(argc1, argv);
+	char *changelistArg[] = {  (char*)"-l", (char*)"-m", (char*)"5", (char*)"-s", (char*)"submitted", (char*)"-t" };
+	int changelistC = 6;
+	client.SetArgv(changelistC, changelistArg);
 	client.Run("changes", &ui);
+
+	std::string data = ui.GetData();
+	std::cout << data.c_str() << std::endl;
+
+
+	json message{};
+	message["\"username\""] = "\"Perforce C++ Bot\"";
+	message["\"content\""] = "\"Some changelist number\"";
+
+	std::string jsonStr = message.dump();
+
+	std::string webhookCommand("curl -H \"Content-Type:application/json;charset=UTF-8\" -X POST -d ");
+	webhookCommand.append(jsonStr);
+	webhookCommand += ' ';
+	char* buff = new char[125];
+	size_t nrOfElmnts = 0;
+	_dupenv_s(&buff, &nrOfElmnts, "DISCORDWEBHOOK");
+	webhookCommand.append(buff);
+	system(webhookCommand.c_str());
+
 	// Close connection
 
 	client.Final(&e);

@@ -210,6 +210,9 @@
     <ClInclude Include="include\p4\web822.h">
       <Filter>P4</Filter>
     </ClInclude>
+    <ClInclude Include="include\json.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PerforceDiscordWebhookCpp.cpp">
