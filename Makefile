@@ -1,6 +1,5 @@
 CC=gcc
-LDFLAGS = -LPerforceDiscordWebhookCpp/lib
-LIBS = -lclient -lrpc -lsupp
+LIBS = -LPerforceDiscordWebhookCpp/lib -lclient -lrpc -lsupp
 
 PerforceDiscordWebhookCpp: PerforceDiscordWebhookCpp/PerforceDiscordWebhookCpp.o
 	$(CC) -o PerforceDiscordWebhook PerforceDiscordWebhookCpp/PerforceDiscordWebhookCpp.o $(LIBS)
