@@ -1,2 +1,4 @@
-PerforceDiscordWebhookCpp: PerforceDiscordWebhookCpp.cpp
-	gcc -o PerforceDiscordWebhookCpp PerforceDiscordWebhookCpp.cpp  -I.
+CC=gcc
+
+PerforceDiscordWebhookCpp: PerforceDiscordWebhookCpp.o
+	$(CC) -o PerforceDiscordWebhookCpp PerforceDiscordWebhookCpp/PerforceDiscordWebhookCpp.o
