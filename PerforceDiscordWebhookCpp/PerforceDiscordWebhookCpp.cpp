@@ -42,7 +42,7 @@ void ClientUserEx::OutputText(const char *data, int)
 	m_Data += data;
 }
 
-int main(int argc)
+int main(int argc, char* argv[])
 {
 	ClientUserEx ui;
 	ClientApi client;
@@ -80,7 +80,11 @@ int main(int argc)
 
 
 	json message{};
+#ifdef _WIN32
 	message["\"username\""] = "\"Perforce C++ Bot\"";
+#else
+	message["\"username\""] = "\"Perforce C++ Bot Heroku\"";
+#endif	
 	message["\"content\""] = "\"Some changelist number\"";
 
 	std::string jsonStr = message.dump();
@@ -88,9 +92,15 @@ int main(int argc)
 	std::string webhookCommand("curl -H \"Content-Type:application/json;charset=UTF-8\" -X POST -d ");
 	webhookCommand.append(jsonStr);
 	webhookCommand += ' ';
+
+#ifdef _WIN32
 	char* buff = new char[125];
 	size_t nrOfElmnts = 0;
 	_dupenv_s(&buff, &nrOfElmnts, "DISCORDWEBHOOK");
+#else
+	char* buff = getenv("DISCORDWEBHOOK");
+#endif
+
 	webhookCommand.append(buff);
 	system(webhookCommand.c_str());
 
