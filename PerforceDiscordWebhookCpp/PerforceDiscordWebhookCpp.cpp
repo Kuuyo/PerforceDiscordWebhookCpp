@@ -60,7 +60,7 @@ std::vector<char> ReadFile(const std::string &fileName);
 
 void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs);
 
-void ParseChangelists(ClientUserEx &cu);
+void ParseChangelists(ClientUserEx &cu, ClientApi &client);
 
 void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
 
@@ -72,9 +72,13 @@ void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 
 struct FileData;
 struct Changelist;
-void StoreChangelistsDataInStruct(const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
+void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
 
-void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles);
+void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &cl, std::vector<FileData> &outFiles);
+
+void ParseDiffs(ClientUserEx &cu, ClientApi &client, FileData &fileData);
+
+void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData);
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName);
 
@@ -167,7 +171,7 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 #endif
 		GetDescriptionsOfChangelists(cu, client, unsyncedNrs);
 
-		ParseChangelists(cu);
+		ParseChangelists(cu, client);
 	}
 }
 
@@ -323,6 +327,26 @@ struct FileData
 	std::string action; // TODO: Replace by an enum?
 	std::string type; // TODO: Replace by an enum?
 	std::vector<std::string> diff;
+
+	bool IsFirstRevision() { return revision == 1; }
+
+	// These two were written much shorter, but gave unexpected results
+	char* GetCurrentRev()
+	{
+		std::string s(fileName);
+		s.push_back('#');
+		s.append(std::to_string(revision));
+		return _strdup(s.c_str());
+	}
+
+	char* GetPreviousRev()
+	{
+		std::string s(fileName);
+		s.push_back('#');
+		uint32_t r = revision - 1;
+		s.append(std::to_string(r));
+		return _strdup(s.c_str());
+	}
 };
 
 struct Changelist
@@ -335,13 +359,13 @@ struct Changelist
 	std::vector<FileData> files;
 };
 
-void ParseChangelists(ClientUserEx &cu)
+void ParseChangelists(ClientUserEx &cu, ClientApi &client)
 {
 	std::vector<std::string> changelists;
 	ExtractChangelists(cu, changelists);
 	
 	std::vector<Changelist> changelistStructs;
-	StoreChangelistsDataInStruct(changelists, changelistStructs);
+	StoreChangelistsDataInStruct(cu, client, changelists, changelistStructs);
 
 
 }
@@ -425,7 +449,7 @@ void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 #endif
 }
 
-void StoreChangelistsDataInStruct(const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs)
+void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs)
 {
 	for (const std::string &cl : changelists)
 	{
@@ -454,14 +478,14 @@ void StoreChangelistsDataInStruct(const std::vector<std::string> &changelists, s
 		clStrct.description = data;
 
 		std::vector<FileData> files;
-		ParseFiles(cl, files);
+		ParseFiles(cu, client, cl, files);
 		clStrct.files = files;
 
 		changelistStructs.push_back(clStrct);
 	}
 }
 
-void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles)
+void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &cl, std::vector<FileData> &outFiles)
 {
 	std::string filterPath(GetEnv("P4FILTERPATH"));
 	filterPath = filterPath.substr(0, filterPath.size() - 3); // As a filterpath ends in 3 dots
@@ -472,8 +496,6 @@ void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles)
 	std::vector<std::string> files;
 	std::regex rgx(fileRegx.str());
 	ExtractMultiLineDataFullString(cl, rgx, files);
-
-
 
 	for (const std::string &fileStr : files)
 	{
@@ -494,15 +516,41 @@ void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles)
 			continue;
 		}
 
-
+		ParseDiffs(cu, client, fileData);
 
 		outFiles.push_back(fileData);
 	}
 }
 
-void GetDiffs()
+void ParseDiffs(ClientUserEx &cu, ClientApi &client, FileData &fileData)
 {
+	GetDiff(cu, client, fileData);
 
+	std::string diff(cu.GetData());
+	cu.ClearBuffer();
+
+
+
+	std::cout << diff << std::endl;
+}
+
+void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData)
+{
+	int diffC = 2;
+	// I need to do get the diff even if it's the first rev, to know the file's type
+	if (fileData.IsFirstRevision())
+	{
+		char *diffArg[] = { fileData.GetCurrentRev(), fileData.GetCurrentRev() };
+		client.SetArgv(diffC, diffArg);
+	}
+	else
+	{
+		char *diffArg[] = { fileData.GetPreviousRev(), fileData.GetCurrentRev() };
+		client.SetArgv(diffC, diffArg);
+	}	
+
+	// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_diff2.html
+	client.Run("diff2", &cu);
 }
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName)
