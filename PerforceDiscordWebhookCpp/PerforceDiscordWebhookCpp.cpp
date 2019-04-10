@@ -1,4 +1,8 @@
 ﻿#include <iostream>
+#include <sstream>
+#include <vector>
+#include <regex>
+#include <fstream>
 
 #include "include/p4/clientapi.h"
 #include "include/json.hpp"
@@ -32,54 +36,162 @@ private:
 	std::string m_Data;
 };
 
-void ClientUserEx::OutputInfo(char, const char *data)
-{
-	m_Data += data;
-}
+void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg);
 
-void ClientUserEx::OutputText(const char *data, int)
-{
-	m_Data += data;
-}
+void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
+
+std::vector<char> ReadFile(const char* fileName);
+
+void WriteFile(const std::vector<char> &data, const char* fileName);
+
+void SendWebhookMessage(ClientUserEx &cu);
+
+void Close(ClientApi &client, Error &e, StrBuf &msg);
 
 int main(int argc, char* argv[])
 {
-	ClientUserEx ui;
+	ClientUserEx cu;
 	ClientApi client;
 	StrBuf msg;
 	Error e;
 
-	// Any special protocol mods
+	Login(cu, client, e, msg);
 
-	//client.SetProtocol( "tag", "");
+	CheckForNewChangeLists(cu, client, 5);
 
-	// Connect to server
+	SendWebhookMessage(cu);
 
+	Close(client, e, msg);
+
+	return 0;
+}
+
+void ClientUserEx::OutputInfo(char, const char *data)
+{
+	m_Data.append(data);
+	m_Data.push_back('\n');
+}
+
+void ClientUserEx::OutputText(const char *data, int)
+{
+	m_Data.append(data);
+	m_Data.push_back('\n');
+}
+
+void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg)
+{
 	client.Init(&e);
 
 #ifndef _WIN32
 	char *loginArg[] = { (char*)"-a" };
 	client.SetArgv(1, loginArg);
-	client.Run("login", &ui);
+	client.Run("login", &cu);
 #endif
 
 	if (e.Test())
 	{
 		e.Fmt(&msg);
 		fprintf(stderr, "%s\n", msg.Text());
-		return 1;
+		exit(1);
 	}
+}
 
-	char *changelistArg[] = {  (char*)"-l", (char*)"-m", (char*)"5", (char*)"-s", (char*)"submitted", (char*)"-t" };
+void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts)
+{	
+	// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_changes.html
+	char *changelistArg[] = { (char*)"-l", (char*)"-m", (char*)std::to_string(nrOfChngLsts).c_str(), (char*)"-s", (char*)"submitted", (char*)"-t" };
 	int changelistC = 6;
 	client.SetArgv(changelistC, changelistArg);
-	client.Run("changes", &ui);
+	client.Run("changes", &cu);
 
-	std::string data = ui.GetData();
-	std::cout << data.c_str() << std::endl;
+	std::istringstream dataStream(cu.GetData());
+	std::string dataLine = "";
+	std::string changeList = "";
+	std::vector<std::string> changeLists;
+	changeLists.reserve(nrOfChngLsts);
+	std::vector<std::string> changeListNrs;
+	changeListNrs.reserve(nrOfChngLsts);
+	std::regex changeListRgx("(Change )([0-9]+)");
+	std::smatch sm;
 
+	while (std::getline(dataStream, dataLine, '\n'))
+	{
+		if (std::regex_search(dataLine,sm,changeListRgx))
+		{
+			std::string changeListNr(sm[2]);
+			changeListNr.push_back('\n');
+			changeListNrs.push_back(changeListNr);
 
+			if (!changeList.empty())
+				changeLists.push_back(changeList);
+
+			changeList = "";
+			changeList.append(dataLine);
+		}
+		else
+		{
+			changeList.append(dataLine);
+			changeList.push_back('\n');
+		}
+	}
+
+	for (auto cl : changeLists)
+		std::cout << cl << std::endl;
+	for (auto cl : changeListNrs)
+		std::cout << cl << std::endl;
+
+	std::string fileName("cl.txt");
+	
+	std::vector<char> file = ReadFile(fileName.c_str());
+
+	std::vector<char> newFile;
+
+	for (auto clnr : changeListNrs)
+		for (auto c : clnr)
+			newFile.push_back(c);
+
+	WriteFile(newFile, fileName.c_str());
+}
+
+std::vector<char> ReadFile(const char* fileName)
+{
+	auto file = new std::ifstream(fileName, std::ios::binary);
+
+	if (!file->is_open())
+	{
+		std::cout << "Could not open file: " << fileName << "\n";
+		exit(-1);
+	}
+
+	std::vector<char> fileVec((std::istreambuf_iterator<char>(*file)), (std::istreambuf_iterator<char>()));
+
+	file->close();
+
+	delete file;
+
+	return fileVec;
+}
+
+void WriteFile(const std::vector<char> &data, const char* fileName)
+{
+	auto file = new std::ofstream(fileName, std::ios::binary);
+
+	if (!file->is_open())
+	{
+		std::cout << "Could not create file: " << fileName << "\n";
+		exit(-1);
+	}
+
+	file->write(data.data(), data.size());
+
+	file->close();
+	delete file;
+}
+
+void SendWebhookMessage(ClientUserEx &cu)
+{
 	json message{};
+
 #ifdef _WIN32
 	message["\"username\""] = "\"Perforce C++ Bot\"";
 #else
@@ -102,18 +214,18 @@ int main(int argc, char* argv[])
 #endif
 
 	webhookCommand.append(buff);
+
 	system(webhookCommand.c_str());
+}
 
-	// Close connection
-
+void Close(ClientApi &client, Error &e, StrBuf &msg)
+{
 	client.Final(&e);
 
 	if (e.Test())
 	{
 		e.Fmt(&msg);
 		fprintf(stderr, "%s\n", msg.Text());
-		return 1;
+		exit(1);
 	}
-
-	return 0;
 }
