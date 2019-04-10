@@ -371,6 +371,9 @@ void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::v
 			dataCat.push_back('\n');
 		}
 	}
+
+	if (!dataCat.empty())
+		outData.push_back(dataCat);
 }
 
 void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
@@ -485,6 +488,8 @@ void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles)
 			std::cout << "WARNING: Could not parse file: " << fileStr << std::endl;
 			continue;
 		}
+
+
 
 		outFiles.push_back(fileData);
 	}
