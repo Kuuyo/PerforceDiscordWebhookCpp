@@ -82,6 +82,7 @@ void SendWebhookMessage(ClientUserEx &cu);
 
 void Close(ClientApi &client, Error &e, StrBuf &msg);
 
+///////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
 	ClientUserEx cu;
@@ -101,6 +102,7 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
+///////////////////////////////////////////////////////////////////////
 
 void ClientUserEx::OutputInfo(char, const char *data)
 {
@@ -305,8 +307,9 @@ void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std
 		// clId = "69183"; // TODO: REMOVE THIS
 
 		// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
-		char *clArg[] = { (char*)clId.c_str() };
-		int clC = 1;
+		// Added -s here, as diffs will be handled later instead of them being dragged all the way from here
+		char *clArg[] = { (char*)"-s", (char*)clId.c_str() };
+		int clC = 2;
 		client.SetArgv(clC, clArg);
 		client.Run("describe", &cu);
 	}
@@ -470,6 +473,8 @@ void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles)
 	std::regex rgx(fileRegx.str());
 	ExtractMultiLineDataFullString(cl, rgx, files);
 
+
+
 	for (const std::string &fileStr : files)
 	{
 		FileData fileData;
@@ -493,6 +498,11 @@ void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles)
 
 		outFiles.push_back(fileData);
 	}
+}
+
+void GetDiffs()
+{
+
 }
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName)
