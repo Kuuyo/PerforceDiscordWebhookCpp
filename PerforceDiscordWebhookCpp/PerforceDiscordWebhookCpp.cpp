@@ -40,9 +40,9 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg);
 
 void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
 
-std::vector<char> ReadFile(const char* fileName);
+std::vector<char> ReadFile(const std::string &fileName);
 
-void WriteFile(const std::vector<char> &data, const char* fileName);
+void WriteFile(const std::vector<char> &data, const std::string &fileName);
 
 void SendWebhookMessage(ClientUserEx &cu);
 
@@ -142,7 +142,7 @@ void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfCh
 
 	std::string fileName("cl.txt");
 	
-	std::vector<char> file = ReadFile(fileName.c_str());
+	std::vector<char> file = ReadFile(fileName);
 
 	std::vector<char> newFile;
 
@@ -150,42 +150,39 @@ void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfCh
 		for (auto c : clnr)
 			newFile.push_back(c);
 
-	WriteFile(newFile, fileName.c_str());
+	WriteFile(newFile, fileName);
 }
 
-std::vector<char> ReadFile(const char* fileName)
+std::vector<char> ReadFile(const std::string &fileName)
 {
-	auto file = new std::ifstream(fileName, std::ios::binary);
+	std::ifstream file(fileName, std::ios::binary);
 
-	if (!file->is_open())
+	if (!file.is_open())
 	{
-		std::cout << "Could not open file: " << fileName << "\n";
-		exit(-1);
+		std::cout << "File not found: " << fileName << "\nNew cache file will be made";
+		return std::vector<char>();
 	}
 
-	std::vector<char> fileVec((std::istreambuf_iterator<char>(*file)), (std::istreambuf_iterator<char>()));
+	std::vector<char> fileVec((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
 
-	file->close();
-
-	delete file;
+	file.close();
 
 	return fileVec;
 }
 
-void WriteFile(const std::vector<char> &data, const char* fileName)
+void WriteFile(const std::vector<char> &data, const std::string &fileName)
 {
-	auto file = new std::ofstream(fileName, std::ios::binary);
+	std::ofstream file(fileName, std::ios::binary);
 
-	if (!file->is_open())
+	if (!file.is_open())
 	{
 		std::cout << "Could not create file: " << fileName << "\n";
 		exit(-1);
 	}
 
-	file->write(data.data(), data.size());
+	file.write(data.data(), data.size());
 
-	file->close();
-	delete file;
+	file.close();
 }
 
 void SendWebhookMessage(ClientUserEx &cu)
