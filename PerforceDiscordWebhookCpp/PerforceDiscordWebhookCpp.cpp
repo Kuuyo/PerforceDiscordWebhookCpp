@@ -49,7 +49,9 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 
 std::vector<char> ReadFile(const std::string &fileName);
 
-void WriteFile(const std::vector<char> &data, const std::string &fileName);
+void ParseChangelists(ClientUserEx &cu);
+
+void WriteFile(const std::vector<std::string> &data, const std::string &fileName);
 
 void SendWebhookMessage(ClientUserEx &cu);
 
@@ -66,8 +68,7 @@ int main(int argc, char* argv[])
 
 	CheckForUnsyncedChangeLists(cu, client, 5);
 
-	// TODO: REMEMBER TO UNCOMMENT
-	//SendWebhookMessage(cu);
+	SendWebhookMessage(cu);
 
 	Close(client, e, msg);
 
@@ -131,18 +132,12 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 	FetchUnsyncedNrs(cacheFileName, changeListNrs, unsyncedNrs);
 
 	if (unsyncedNrs.size() > 0)
-	{
-		std::vector<char> newFile;
-
-		for (auto clnr : unsyncedNrs)
-			for (auto c : clnr)
-				newFile.push_back(c);
-		// TODO: REMEMBER TO UNCOMMENT
-		//WriteFile(newFile, fileName);
+	{		
+		WriteFile(unsyncedNrs, cacheFileName);
 
 		for(auto clId : unsyncedNrs)
 		{
-			clId.pop_back();
+			clId.pop_back(); // Giving newline to the command makes it fail
 			// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
 			char *clArg[] = { (char*)clId.c_str() };
 			int clC = 1;
@@ -150,7 +145,7 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 			client.Run("describe", &cu);
 		}
 
-		std::cout << cu.GetData() << std::endl;
+		ParseChangelists(cu);
 	}
 }
 
@@ -281,7 +276,15 @@ std::vector<char> ReadFile(const std::string &fileName)
 	return fileVec;
 }
 
-void WriteFile(const std::vector<char> &data, const std::string &fileName)
+void ParseChangelists(ClientUserEx &cu)
+{
+	std::istringstream dataStream(cu.GetData());
+	cu.ClearBuffer();
+
+
+}
+
+void WriteFile(const std::vector<std::string> &data, const std::string &fileName)
 {
 	std::ofstream file(fileName, std::ios::binary);
 
@@ -291,7 +294,13 @@ void WriteFile(const std::vector<char> &data, const std::string &fileName)
 		exit(-1);
 	}
 
-	file.write(data.data(), data.size());
+	std::vector<char> newFile;
+
+	for (auto clnr : data)
+		for (auto c : clnr)
+			newFile.push_back(c);
+
+	file.write(newFile.data(), newFile.size());
 
 	file.close();
 }
