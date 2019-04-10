@@ -9,6 +9,8 @@
 
 using json = nlohmann::json;
 
+#define TESTING
+
 #ifdef _WIN32
 #pragma comment(lib, "libclient.lib")
 #pragma comment(lib, "librpc.lib")
@@ -49,7 +51,11 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 
 std::vector<char> ReadFile(const std::string &fileName);
 
+void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs);
+
 void ParseChangelists(ClientUserEx &cu);
+
+void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName);
 
@@ -68,7 +74,9 @@ int main(int argc, char* argv[])
 
 	CheckForUnsyncedChangeLists(cu, client, 5);
 
+#ifndef TESTING
 	SendWebhookMessage(cu);
+#endif // DEBUG
 
 	Close(client, e, msg);
 
@@ -133,23 +141,16 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 
 	if (unsyncedNrs.size() > 0)
 	{		
+#ifndef TESTING
 		WriteFile(unsyncedNrs, cacheFileName);
-
-		for(auto clId : unsyncedNrs)
-		{
-			clId.pop_back(); // Giving newline to the command makes it fail
-			// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
-			char *clArg[] = { (char*)clId.c_str() };
-			int clC = 1;
-			client.SetArgv(clC, clArg);
-			client.Run("describe", &cu);
-		}
+#endif
+		GetDescriptionsOfChangelists(cu, client, unsyncedNrs);
 
 		ParseChangelists(cu);
 	}
 }
 
-void GetLatestChangeListsFromServer(ClientUserEx & cu, ClientApi & client, uint16_t nrOfChngLsts)
+void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts)
 {
 	char* filterPath = GetEnv("P4FILTERPATH");
 
@@ -167,10 +168,6 @@ void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<s
 	cu.ClearBuffer();
 
 	std::string dataLine = "";
-	std::string changeList = "";
-
-	std::vector<std::string> changeLists;
-	changeLists.reserve(nrOfChngLsts);
 
 	changeListNrs.reserve(nrOfChngLsts);
 
@@ -184,17 +181,6 @@ void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<s
 			std::string changeListNr(sm[2]);
 			changeListNr.push_back('\n');
 			changeListNrs.push_back(changeListNr);
-
-			if (!changeList.empty())
-				changeLists.push_back(changeList);
-
-			changeList = "";
-			changeList.append(dataLine);
-		}
-		else
-		{
-			changeList.append(dataLine);
-			changeList.push_back('\n');
 		}
 	}
 }
@@ -276,12 +262,93 @@ std::vector<char> ReadFile(const std::string &fileName)
 	return fileVec;
 }
 
+void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs)
+{
+	for (auto clId : unsyncedNrs)
+	{
+		clId.pop_back(); // Giving newline to the command makes it fail
+		// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
+		char *clArg[] = { (char*)clId.c_str() };
+		int clC = 1;
+		client.SetArgv(clC, clArg);
+		client.Run("describe", &cu);
+	}
+	// Don't need to return anything as it gets stored in m_Data in ClientUserEx
+}
+
+struct FileData
+{
+	std::string fileName;
+	uint32_t revision;
+	std::string action;
+	std::string type;
+	std::vector<std::string> diff;
+};
+
+struct Changelist
+{
+	uint32_t id;
+	std::string author;
+	std::string workspace;
+	std::string timestamp;
+	std::string description;
+	std::vector<FileData> files;
+};
+
 void ParseChangelists(ClientUserEx &cu)
+{
+	std::vector<std::string> changeLists;
+	ExtractChangelists(cu, changeLists);
+
+	for (std::string cl : changeLists)
+	{
+
+	}
+}
+
+void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 {
 	std::istringstream dataStream(cu.GetData());
 	cu.ClearBuffer();
 
+	// Slight repeat of code from ExtractChangelistNrs,
+	// but then storing the full changelist instead of numbers
+	// Describe contains more info than changes though
+	// So I'd rather handle it all here than there (and then having to pass it on)
 
+	std::string dataLine = "";
+	std::string changeList = "";
+
+	std::regex changeListRgx("(^Change )([0-9]+)");
+	std::smatch sm;
+
+	while (std::getline(dataStream, dataLine, '\n'))
+	{
+		if (std::regex_search(dataLine, sm, changeListRgx))
+		{
+			std::string changeListNr(sm[2]);
+			changeListNr.push_back('\n');
+
+			if (!changeList.empty())
+				changelists.push_back(changeList);
+
+			changeList = "";
+			changeList.append(dataLine);
+		}
+		else
+		{
+			changeList.append(dataLine);
+			changeList.push_back('\n');
+		}
+	}
+
+#ifdef TESTING
+	for (auto cl : changelists)
+	{
+		std::cout << "CHANGELIST" << std::endl;
+		std::cout << cl;
+	}
+#endif
 }
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName)
