@@ -45,6 +45,8 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 
 void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
 
+void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
+
 void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs);
 
 void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::string> &changeListNrs, std::vector<std::string> &unsyncedNrs);
@@ -55,7 +57,13 @@ void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std
 
 void ParseChangelists(ClientUserEx &cu);
 
+void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
+
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
+
+struct FileData;
+struct Changelist;
+void StoreChangelistsDataInStruct(const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName);
 
@@ -162,27 +170,31 @@ void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_
 	// Don't need to return anything as it gets stored in m_Data in ClientUserEx
 }
 
-void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs)
+void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
 {
-	std::istringstream dataStream(cu.GetData());
-	cu.ClearBuffer();
+	std::istringstream dataStream(data);
 
 	std::string dataLine = "";
-
-	changeListNrs.reserve(nrOfChngLsts);
-
-	std::regex changeListRgx("(^Change )([0-9]+)");
 	std::smatch sm;
 
 	while (std::getline(dataStream, dataLine, '\n'))
 	{
-		if (std::regex_search(dataLine, sm, changeListRgx))
+		if (std::regex_search(dataLine, sm, rgx))
 		{
 			std::string changeListNr(sm[2]);
 			changeListNr.push_back('\n');
-			changeListNrs.push_back(changeListNr);
+			outData.push_back(changeListNr);
 		}
 	}
+}
+
+void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs)
+{
+	changeListNrs.reserve(nrOfChngLsts);
+	std::regex changeListRgx("(^Change )([0-9]+)");
+	ExtractSingleLineData(cu.GetData(), changeListRgx, changeListNrs);
+
+	cu.ClearBuffer();
 }
 
 void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::string> &changeListNrs, std::vector<std::string> &unsyncedNrs)
@@ -297,50 +309,49 @@ struct Changelist
 
 void ParseChangelists(ClientUserEx &cu)
 {
-	std::vector<std::string> changeLists;
-	ExtractChangelists(cu, changeLists);
+	std::vector<std::string> changelists;
+	ExtractChangelists(cu, changelists);
+	
+	std::vector<Changelist> changelistStructs;
+	StoreChangelistsDataInStruct(changelists, changelistStructs);
+}
 
-	for (std::string cl : changeLists)
+void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
+{
+	// Slight repeat of code from ExtractSingleLineData,
+	// but then storing the multi lines of data from a single line
+	// I'd rather keep them two seperate functions to not add more conditionals internally
+
+	std::istringstream dataStream(data);
+
+	std::string dataLine = "";
+	std::string dataCat = "";
+	std::smatch sm;
+
+	while (std::getline(dataStream, dataLine, '\n'))
 	{
+		if (std::regex_search(dataLine, sm, rgx))
+		{
+			if (!dataCat.empty())
+				outData.push_back(dataCat);
 
+			dataCat = "";
+			dataCat.append(dataLine);
+		}
+		else
+		{
+			dataCat.append(dataLine);
+			dataCat.push_back('\n');
+		}
 	}
 }
 
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 {
-	std::istringstream dataStream(cu.GetData());
-	cu.ClearBuffer();
-
-	// Slight repeat of code from ExtractChangelistNrs,
-	// but then storing the full changelist instead of numbers
-	// Describe contains more info than changes though
-	// So I'd rather handle it all here than there (and then having to pass it on)
-
-	std::string dataLine = "";
-	std::string changeList = "";
-
 	std::regex changeListRgx("(^Change )([0-9]+)");
-	std::smatch sm;
+	ExtractMultiLineData(cu.GetData(), changeListRgx, changelists);
 
-	while (std::getline(dataStream, dataLine, '\n'))
-	{
-		if (std::regex_search(dataLine, sm, changeListRgx))
-		{
-			std::string changeListNr(sm[2]);
-			changeListNr.push_back('\n');
-
-			if (!changeList.empty())
-				changelists.push_back(changeList);
-
-			changeList = "";
-			changeList.append(dataLine);
-		}
-		else
-		{
-			changeList.append(dataLine);
-			changeList.push_back('\n');
-		}
-	}
+	cu.ClearBuffer();
 
 #ifdef TESTING
 	for (auto cl : changelists)
@@ -349,6 +360,14 @@ void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 		std::cout << cl;
 	}
 #endif
+}
+
+void StoreChangelistsDataInStruct(const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs)
+{
+	for (const std::string &cl : changelists)
+	{
+		
+	}
 }
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName)
