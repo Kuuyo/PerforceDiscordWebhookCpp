@@ -23,6 +23,7 @@ using json = nlohmann::json;
 #endif
 
 // Just putting it here for now so I don't have to edit the Makefile..
+// TODO: move all these functions and stuff somewhere else so it's not all in one file
 class ClientUserEx : public ClientUser
 {
 public:
@@ -45,7 +46,11 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 
 void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
 
+// Extracts the second capture group of the regex given
 void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
+
+// Extracts the second capture group of the regex given
+void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::string &outData);
 
 void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs);
 
@@ -58,6 +63,8 @@ void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std
 void ParseChangelists(ClientUserEx &cu);
 
 void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
+
+void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::string &outData);
 
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
 
@@ -170,6 +177,7 @@ void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_
 	// Don't need to return anything as it gets stored in m_Data in ClientUserEx
 }
 
+// Extracts the second capture group of the regex given
 void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
 {
 	std::istringstream dataStream(data);
@@ -181,11 +189,21 @@ void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::
 	{
 		if (std::regex_search(dataLine, sm, rgx))
 		{
-			std::string changeListNr(sm[2]);
-			changeListNr.push_back('\n');
-			outData.push_back(changeListNr);
+			std::string dataString(sm[2]);
+			dataString.push_back('\n');
+			outData.push_back(dataString);
 		}
 	}
+}
+
+// Extracts the second capture group of the regex given
+void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::string &outData)
+{
+	std::vector<std::string> temp;
+	ExtractSingleLineData(data,rgx,temp);
+
+	outData = temp[0];
+	outData.pop_back();
 }
 
 void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs)
@@ -292,8 +310,8 @@ struct FileData
 {
 	std::string fileName;
 	uint32_t revision;
-	std::string action;
-	std::string type;
+	std::string action; // TODO: Replace by an enum?
+	std::string type; // TODO: Replace by an enum?
 	std::vector<std::string> diff;
 };
 
@@ -314,6 +332,8 @@ void ParseChangelists(ClientUserEx &cu)
 	
 	std::vector<Changelist> changelistStructs;
 	StoreChangelistsDataInStruct(changelists, changelistStructs);
+
+
 }
 
 void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
@@ -346,6 +366,25 @@ void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::v
 	}
 }
 
+void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::string &outData)
+{
+	std::istringstream dataStream(data);
+	
+	std::string dataLine = "";
+	std::smatch sm;
+	
+	outData = "";
+	
+	while (std::getline(dataStream, dataLine, '\n'))
+	{
+		if (std::regex_search(dataLine, sm, rgx))
+		{
+			outData.append(sm[2]);
+			outData.push_back('\n');
+		}
+	}
+}
+
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 {
 	std::regex changeListRgx("(^Change )([0-9]+)");
@@ -366,7 +405,34 @@ void StoreChangelistsDataInStruct(const std::vector<std::string> &changelists, s
 {
 	for (const std::string &cl : changelists)
 	{
-		
+		Changelist clStrct;
+
+		std::string data;
+
+		std::regex rgx("(^Change )([0-9]+)");
+		ExtractSingleLineData(cl, rgx, data);
+		clStrct.id = std::stoi(data);
+
+		rgx = ("(by )(.+)(@)");
+		ExtractSingleLineData(cl, rgx, data);
+		clStrct.author = data;
+
+		rgx = ("(@)(.+)( on )");
+		ExtractSingleLineData(cl, rgx, data);
+		clStrct.workspace = data;
+
+		rgx = ("( on )(.+)($)");
+		ExtractSingleLineData(cl, rgx, data);
+		clStrct.timestamp = data;
+
+		rgx = ("(^\\t)(.+)($)");
+		ExtractMultiLineDataFullString(cl, rgx, data);
+		clStrct.description = data;
+
+		// Files
+
+
+		changelistStructs.push_back(clStrct);
 	}
 }
 
