@@ -20,6 +20,7 @@ using json = nlohmann::json;
 #pragma comment(lib, "libsupp.a")
 #endif
 
+// Just putting it here for now so I don't have to edit the Makefile..
 class ClientUserEx : public ClientUser
 {
 public:
@@ -38,7 +39,13 @@ private:
 
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg);
 
-void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
+void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
+
+void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
+
+void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs);
+
+void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::string> &changeListNrs, std::vector<std::string> &unsyncedNrs);
 
 std::vector<char> ReadFile(const std::string &fileName);
 
@@ -57,9 +64,10 @@ int main(int argc, char* argv[])
 
 	Login(cu, client, e, msg);
 
-	CheckForNewChangeLists(cu, client, 5);
+	CheckForUnsyncedChangeLists(cu, client, 5);
 
-	SendWebhookMessage(cu);
+	// TODO: REMEMBER TO UNCOMMENT
+	//SendWebhookMessage(cu);
 
 	Close(client, e, msg);
 
@@ -76,6 +84,20 @@ void ClientUserEx::OutputText(const char *data, int)
 {
 	m_Data.append(data);
 	m_Data.push_back('\n');
+}
+
+inline char* GetEnv(const char* varName)
+{
+	// Visual Studio complains when I use getenv
+#ifdef _WIN32
+	char* buff = new char[125];
+	size_t nrOfElmnts = 0;
+	_dupenv_s(&buff, &nrOfElmnts, varName);
+#else
+	char* buff = getenv(varName);
+#endif
+
+	return buff;
 }
 
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg)
@@ -96,36 +118,73 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg)
 	}
 }
 
-void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts)
+void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts)
 {	
-#ifdef _WIN32
-	char* buff = new char[125];
-	size_t nrOfElmnts = 0;
-	_dupenv_s(&buff, &nrOfElmnts, "P4FILTERPATH");
-#else
-	char* buff = getenv("P4FILTERPATH");
-#endif
+	GetLatestChangeListsFromServer(cu, client, nrOfChngLsts);
+
+	std::vector<std::string> changeListNrs;
+	ExtractChangelistNrs(cu, nrOfChngLsts, changeListNrs);
+
+	std::string cacheFileName("cl.txt");
+	
+	std::vector<std::string> unsyncedNrs;
+	FetchUnsyncedNrs(cacheFileName, changeListNrs, unsyncedNrs);
+
+	if (unsyncedNrs.size() > 0)
+	{
+		std::vector<char> newFile;
+
+		for (auto clnr : unsyncedNrs)
+			for (auto c : clnr)
+				newFile.push_back(c);
+		// TODO: REMEMBER TO UNCOMMENT
+		//WriteFile(newFile, fileName);
+
+		for(auto clId : unsyncedNrs)
+		{
+			clId.pop_back();
+			// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
+			char *clArg[] = { (char*)clId.c_str() };
+			int clC = 1;
+			client.SetArgv(clC, clArg);
+			client.Run("describe", &cu);
+		}
+
+		std::cout << cu.GetData() << std::endl;
+	}
+}
+
+void GetLatestChangeListsFromServer(ClientUserEx & cu, ClientApi & client, uint16_t nrOfChngLsts)
+{
+	char* filterPath = GetEnv("P4FILTERPATH");
 
 	// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_changes.html
-	char *changelistArg[] = { (char*)"-l", (char*)"-m", (char*)std::to_string(nrOfChngLsts).c_str(), (char*)"-s", (char*)"submitted", (char*)"-t", buff };
+	char *changelistArg[] = { (char*)"-l", (char*)"-m", (char*)std::to_string(nrOfChngLsts).c_str(), (char*)"-s", (char*)"submitted", (char*)"-t", filterPath };
 	int changelistC = 7;
 	client.SetArgv(changelistC, changelistArg);
 	client.Run("changes", &cu);
+	// Don't need to return anything as it gets stored in m_Data in ClientUserEx
+}
 
+void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs)
+{
 	std::istringstream dataStream(cu.GetData());
 	cu.ClearBuffer();
+
 	std::string dataLine = "";
 	std::string changeList = "";
+
 	std::vector<std::string> changeLists;
 	changeLists.reserve(nrOfChngLsts);
-	std::vector<std::string> changeListNrs;
+
 	changeListNrs.reserve(nrOfChngLsts);
-	std::regex changeListRgx("(Change )([0-9]+)");
+
+	std::regex changeListRgx("(^Change )([0-9]+)");
 	std::smatch sm;
 
 	while (std::getline(dataStream, dataLine, '\n'))
 	{
-		if (std::regex_search(dataLine,sm,changeListRgx))
+		if (std::regex_search(dataLine, sm, changeListRgx))
 		{
 			std::string changeListNr(sm[2]);
 			changeListNr.push_back('\n');
@@ -143,18 +202,16 @@ void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfCh
 			changeList.push_back('\n');
 		}
 	}
+}
 
-	std::string fileName("cl.txt");
-	
-	std::vector<char> file = ReadFile(fileName);
+void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::string> &changeListNrs, std::vector<std::string> &unsyncedNrs)
+{
+	std::vector<char> file = ReadFile(cacheFileName);
 
-	std::vector<std::string> unsyncedNrs;
-	unsyncedNrs.reserve(nrOfChngLsts);
 	if (file.size() != 0)
 	{
 		std::string cachedNr;
 		std::vector<std::string> cachedNrs;
-		cachedNrs.reserve(nrOfChngLsts);
 		for (auto c : file)
 		{
 			if (c != '\n')
@@ -204,29 +261,6 @@ void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfCh
 	else
 	{
 		unsyncedNrs = changeListNrs;
-	}
-
-	if (unsyncedNrs.size() > 0)
-	{
-		std::vector<char> newFile;
-
-		for (auto clnr : unsyncedNrs)
-			for (auto c : clnr)
-				newFile.push_back(c);
-
-		WriteFile(newFile, fileName);
-
-		for(auto clId : unsyncedNrs)
-		{
-			clId.pop_back();
-			// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
-			char *clArg[] = { (char*)clId.c_str() };
-			int clC = 1;
-			client.SetArgv(clC, clArg);
-			client.Run("describe", &cu);
-		}
-
-		std::cout << cu.GetData() << std::endl;
 	}
 }
 
@@ -279,15 +313,8 @@ void SendWebhookMessage(ClientUserEx &cu)
 	webhookCommand.append(jsonStr);
 	webhookCommand += ' ';
 
-#ifdef _WIN32
-	char* buff = new char[125];
-	size_t nrOfElmnts = 0;
-	_dupenv_s(&buff, &nrOfElmnts, "DISCORDWEBHOOK");
-#else
-	char* buff = getenv("DISCORDWEBHOOK");
-#endif
-
-	webhookCommand.append(buff);
+	char* discordWebHook = GetEnv("DISCORDWEBHOOK");
+	webhookCommand.append(discordWebHook);
 
 	system(webhookCommand.c_str());
 }
