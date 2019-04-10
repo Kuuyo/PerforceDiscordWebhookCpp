@@ -98,13 +98,22 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg)
 
 void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts)
 {	
+#ifdef _WIN32
+	char* buff = new char[125];
+	size_t nrOfElmnts = 0;
+	_dupenv_s(&buff, &nrOfElmnts, "P4FILTERPATH");
+#else
+	char* buff = getenv("P4FILTERPATH");
+#endif
+
 	// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_changes.html
-	char *changelistArg[] = { (char*)"-l", (char*)"-m", (char*)std::to_string(nrOfChngLsts).c_str(), (char*)"-s", (char*)"submitted", (char*)"-t" };
-	int changelistC = 6;
+	char *changelistArg[] = { (char*)"-l", (char*)"-m", (char*)std::to_string(nrOfChngLsts).c_str(), (char*)"-s", (char*)"submitted", (char*)"-t", buff };
+	int changelistC = 7;
 	client.SetArgv(changelistC, changelistArg);
 	client.Run("changes", &cu);
 
 	std::istringstream dataStream(cu.GetData());
+	cu.ClearBuffer();
 	std::string dataLine = "";
 	std::string changeList = "";
 	std::vector<std::string> changeLists;
@@ -135,22 +144,90 @@ void CheckForNewChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfCh
 		}
 	}
 
-	for (auto cl : changeLists)
-		std::cout << cl << std::endl;
-	for (auto cl : changeListNrs)
-		std::cout << cl << std::endl;
-
 	std::string fileName("cl.txt");
 	
 	std::vector<char> file = ReadFile(fileName);
 
-	std::vector<char> newFile;
+	std::vector<std::string> unsyncedNrs;
+	unsyncedNrs.reserve(nrOfChngLsts);
+	if (file.size() != 0)
+	{
+		std::string cachedNr;
+		std::vector<std::string> cachedNrs;
+		cachedNrs.reserve(nrOfChngLsts);
+		for (auto c : file)
+		{
+			if (c != '\n')
+				cachedNr.push_back(c);
+			else
+			{
+				cachedNr.push_back(c);
+				cachedNrs.push_back(cachedNr);
+				cachedNr = "";
+			}
+		}
 
-	for (auto clnr : changeListNrs)
-		for (auto c : clnr)
-			newFile.push_back(c);
+		size_t equalIndex = changeListNrs.size();
 
-	WriteFile(newFile, fileName);
+		for (size_t i = 0; i < changeListNrs.size(); ++i)
+		{
+			for (size_t j = 0; j < cachedNrs.size(); ++j)
+			{
+				int clNr = std::stoi(changeListNrs[j]);
+				int caNr = std::stoi(cachedNrs[i]);
+
+				if (clNr > caNr)
+				{
+					continue;
+				}
+				else if (clNr == caNr)
+				{
+					equalIndex = j;
+					break;
+				}
+				else
+				{
+					std::cout << "WARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n";
+				}
+			}
+			if (equalIndex < changeListNrs.size())
+			{
+				break;
+			}
+		}
+
+		for (size_t i = 0; i < equalIndex; ++i)
+		{
+			unsyncedNrs.push_back(changeListNrs[i]);
+		}
+	}
+	else
+	{
+		unsyncedNrs = changeListNrs;
+	}
+
+	if (unsyncedNrs.size() > 0)
+	{
+		std::vector<char> newFile;
+
+		for (auto clnr : unsyncedNrs)
+			for (auto c : clnr)
+				newFile.push_back(c);
+
+		WriteFile(newFile, fileName);
+
+		for(auto clId : unsyncedNrs)
+		{
+			clId.pop_back();
+			// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
+			char *clArg[] = { (char*)clId.c_str() };
+			int clC = 1;
+			client.SetArgv(clC, clArg);
+			client.Run("describe", &cu);
+		}
+
+		std::cout << cu.GetData() << std::endl;
+	}
 }
 
 std::vector<char> ReadFile(const std::string &fileName)
@@ -159,7 +236,7 @@ std::vector<char> ReadFile(const std::string &fileName)
 
 	if (!file.is_open())
 	{
-		std::cout << "File not found: " << fileName << "\nNew cache file will be made";
+		std::cout << "File not found: " << fileName << "\n> New cache file will be made\n\n";
 		return std::vector<char>();
 	}
 
