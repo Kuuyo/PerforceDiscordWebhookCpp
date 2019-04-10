@@ -64,6 +64,8 @@ void ParseChangelists(ClientUserEx &cu);
 
 void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
 
+void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
+
 void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::string &outData);
 
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
@@ -71,6 +73,8 @@ void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 struct FileData;
 struct Changelist;
 void StoreChangelistsDataInStruct(const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
+
+void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles);
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName);
 
@@ -223,7 +227,7 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 	{
 		std::string cachedNr;
 		std::vector<std::string> cachedNrs;
-		for (auto c : file)
+		for (const auto &c : file)
 		{
 			if (c != '\n')
 				cachedNr.push_back(c);
@@ -297,6 +301,9 @@ void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std
 	for (auto clId : unsyncedNrs)
 	{
 		clId.pop_back(); // Giving newline to the command makes it fail
+
+		// clId = "69183"; // TODO: REMOVE THIS
+
 		// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
 		char *clArg[] = { (char*)clId.c_str() };
 		int clC = 1;
@@ -366,22 +373,33 @@ void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::v
 	}
 }
 
-void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::string &outData)
+void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
 {
 	std::istringstream dataStream(data);
-	
+
 	std::string dataLine = "";
 	std::smatch sm;
-	
-	outData = "";
-	
+
 	while (std::getline(dataStream, dataLine, '\n'))
 	{
 		if (std::regex_search(dataLine, sm, rgx))
 		{
-			outData.append(sm[2]);
-			outData.push_back('\n');
+			std::string dataString(sm[2]);
+			outData.push_back(dataString);
 		}
+	}
+}
+
+void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::string &outData)
+{
+	std::vector<std::string> temp;
+	ExtractMultiLineDataFullString(data, rgx, temp);
+
+	outData = "";
+	for (const auto &str : temp)
+	{
+		outData.append(str);
+		outData.push_back('\n');
 	}
 }
 
@@ -393,7 +411,7 @@ void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 	cu.ClearBuffer();
 
 #ifdef TESTING
-	for (auto cl : changelists)
+	for (const auto &cl : changelists)
 	{
 		std::cout << "CHANGELIST" << std::endl;
 		std::cout << cl;
@@ -429,10 +447,46 @@ void StoreChangelistsDataInStruct(const std::vector<std::string> &changelists, s
 		ExtractMultiLineDataFullString(cl, rgx, data);
 		clStrct.description = data;
 
-		// Files
-
+		std::vector<FileData> files;
+		ParseFiles(cl, files);
+		clStrct.files = files;
 
 		changelistStructs.push_back(clStrct);
+	}
+}
+
+void ParseFiles(const std::string &cl, std::vector<FileData> &outFiles)
+{
+	std::string filterPath(GetEnv("P4FILTERPATH"));
+	filterPath = filterPath.substr(0, filterPath.size() - 3); // As a filterpath ends in 3 dots
+
+	std::stringstream fileRegx;
+	fileRegx << "(^)" << "(" << filterPath << ".*)" << "($)";
+
+	std::vector<std::string> files;
+	std::regex rgx(fileRegx.str());
+	ExtractMultiLineDataFullString(cl, rgx, files);
+
+	for (const std::string &fileStr : files)
+	{
+		FileData fileData;
+
+		std::regex fileStringRgx("(^.+)(?:#)([0-9]+)(?: )(.+$)");
+		std::smatch sm;
+
+		if (std::regex_match(fileStr, sm, fileStringRgx))
+		{
+			fileData.fileName = sm[1];
+			fileData.revision = std::stoi(sm[2]);
+			fileData.action = sm[3];
+		}
+		else
+		{
+			std::cout << "WARNING: Could not parse file: " << fileStr << std::endl;
+			continue;
+		}
+
+		outFiles.push_back(fileData);
 	}
 }
 
@@ -448,8 +502,8 @@ void WriteFile(const std::vector<std::string> &data, const std::string &fileName
 
 	std::vector<char> newFile;
 
-	for (auto clnr : data)
-		for (auto c : clnr)
+	for (const auto &clnr : data)
+		for (const auto &c : clnr)
 			newFile.push_back(c);
 
 	file.write(newFile.data(), newFile.size());
