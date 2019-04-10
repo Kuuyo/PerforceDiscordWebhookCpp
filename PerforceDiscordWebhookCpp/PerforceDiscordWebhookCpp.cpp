@@ -336,7 +336,11 @@ struct FileData
 		std::string s(fileName);
 		s.push_back('#');
 		s.append(std::to_string(revision));
+#ifdef _WIN32
 		return _strdup(s.c_str());
+#else
+		return strdup(s.c_str());
+#endif		
 	}
 
 	char* GetPreviousRev()
@@ -345,7 +349,11 @@ struct FileData
 		s.push_back('#');
 		uint32_t r = revision - 1;
 		s.append(std::to_string(r));
+#ifdef _WIN32
 		return _strdup(s.c_str());
+#else
+		return strdup(s.c_str());
+#endif	
 	}
 };
 
