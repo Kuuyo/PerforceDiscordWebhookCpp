@@ -596,7 +596,11 @@ void CreateDiffHTML(std::vector<std::string> &diffVec, const Changelist &clStrct
 	html.push_back("</body>\n");
 	html.push_back("</html\n>");
 
-	std::string filePath("Diffs/");
+	std::string filePath;
+#ifndef _WIN32
+	filePath.append("PerforceDiscordWebhookCpp/");
+#endif
+	filePath.append("Diffs/");
 	filePath.append(fileData.GetStringNoPath());
 	filePath.append(".html");
 
