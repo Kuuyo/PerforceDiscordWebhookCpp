@@ -193,10 +193,8 @@ void CheckAndGetGithubRepo(std::string &path)
 	system(userEmailCommand.c_str());
 
 	std::string userNameCommand("git config --global user.name ");
-	userEmailCommand.append(GetEnv("USERFULLNAME"));
+	userNameCommand.append(GetEnv("USERFULLNAME"));
 	system(userNameCommand.c_str());
-
-	std::cout << userNameCommand << std::endl;
 #endif
 
 	// Could probably check if it exists first
