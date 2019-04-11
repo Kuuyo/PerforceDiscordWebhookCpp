@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 
 		SendWebhookMessage(cu, unsyncedChangelists);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(500)); // TODO: Maybe do this differently, as Heroku might not like this apparently?
+		std::this_thread::sleep_for(std::chrono::milliseconds(300000));
 	}
 
 	Close(client, e, msg);
