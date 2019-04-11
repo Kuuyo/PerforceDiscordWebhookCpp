@@ -1,1 +1,1 @@
-<?php include_once("PerforceDiscordWebhookCpp/Diffs/home.html"); ?>
+<?php include_once("./PerforceDiscordWebhookCpp/Diffs/home.html"); ?>
