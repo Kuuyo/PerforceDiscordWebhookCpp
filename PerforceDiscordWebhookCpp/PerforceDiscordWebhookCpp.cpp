@@ -43,8 +43,6 @@ private:
 struct FileData;
 struct Changelist;
 
-char* GetEnv(const char* varName);
-
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc);
 
 void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, std::vector<Changelist> &changelistStructs);
@@ -103,10 +101,6 @@ int main(int argc, char* argv[])
 	StrBuf msg;
 	Error e;
 
-#ifndef _WIN32
-	WriteFile(GetEnv("P4TICKET"), ".p4tickets");
-#endif
-
 	Login(cu, client, e, msg, argc);
 
 	std::vector<Changelist> changelistStructs;
@@ -132,7 +126,7 @@ void ClientUserEx::OutputText(const char *data, int)
 	m_Data.push_back('\n');
 }
 
-char* GetEnv(const char* varName)
+inline char* GetEnv(const char* varName)
 {
 	// Visual Studio complains when I use getenv
 #ifdef _WIN32
@@ -151,6 +145,8 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 	client.Init(&e);
 
 #ifndef _WIN32
+	char *loginArg[] = { (char*)"-a" };
+	client.SetArgv(1, loginArg);
 	client.Run("login", &cu);
 #endif
 
