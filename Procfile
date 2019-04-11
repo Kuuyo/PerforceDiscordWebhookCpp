@@ -1,1 +1,1 @@
-web: ./PDW
+web: echo $P4SECRET|./PDW
