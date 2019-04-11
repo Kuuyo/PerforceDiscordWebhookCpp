@@ -101,6 +101,10 @@ int main(int argc, char* argv[])
 	StrBuf msg;
 	Error e;
 
+#ifndef _WIN32
+	WriteFile(GetEnv("P4TICKET"), ".p4tickets");
+#endif
+
 	Login(cu, client, e, msg, argc);
 
 	std::vector<Changelist> changelistStructs;
@@ -145,12 +149,7 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 	client.Init(&e);
 
 #ifndef _WIN32
-	if (argc > 1)
-	{
-		char *loginArg[] = { (char*)"-a" };
-		client.SetArgv(1, loginArg);
-		client.Run("login", &cu);
-	}
+	client.Run("login", &cu);
 #endif
 
 	if (e.Test())
@@ -459,14 +458,6 @@ void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 	ExtractMultiLineData(cu.GetData(), changeListRgx, changelists);
 
 	cu.ClearBuffer();
-
-#ifdef TESTING
-	for (const auto &cl : changelists)
-	{
-		std::cout << "CHANGELIST" << std::endl;
-		std::cout << cl;
-	}
-#endif
 }
 
 void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs)
