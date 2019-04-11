@@ -326,9 +326,10 @@ struct FileData
 	uint32_t revision;
 	std::string action; // TODO: Replace by an enum?
 	std::string type; // TODO: Replace by an enum?
-	std::vector<std::string> diff;
 
 	bool IsFirstRevision() { return revision == 1; }
+
+	std::string GetCurrentRevString() { return fileName + '#' + std::to_string(revision); }
 
 	// These two were written much shorter, but gave unexpected results
 	char* GetCurrentRev()
@@ -537,9 +538,27 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, FileData &fileData)
 	std::string diff(cu.GetData());
 	cu.ClearBuffer();
 
+	std::regex rgx("(?:^==== .+?-.+?\\()(.+?)(?:\\) ==== .+?\\n)([\\s\\S]*)");
+	std::smatch sm;
 
+	if (std::regex_search(diff, sm, rgx))
+	{
+		fileData.type = sm[1];
+		if (fileData.action != "edit")
+			return;
+		diff = sm[2];
+	}
+	else
+	{
+		std::cout << "WARNING: Error parsing diff:\n" << diff << std::endl;
+	}
 
 	std::cout << diff << std::endl;
+}
+
+void CreateDiffHTML()
+{
+
 }
 
 void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData)
