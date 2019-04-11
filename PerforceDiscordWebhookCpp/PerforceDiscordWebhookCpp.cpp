@@ -929,7 +929,7 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 					{"title", file.action + " " + file.type},
 					{"description", file.GetCurrentRevString()},
 					{"color", GetColor(file)},
-					{"url", GetEnv("GITHUBPAGESFULLPATH") + file.GetStringNoPath()}
+					{"url", GetEnv("GITHUBPAGESFULLPATH") + ((file.action != "edit") ? "" : file.GetStringNoPath())}
 				}
 			);
 		}
