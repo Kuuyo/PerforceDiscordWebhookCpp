@@ -334,7 +334,11 @@ struct FileData
 	bool IsFirstRevision() { return revision == 1; }
 
 	std::string GetCurrentRevString() { return fileName + '#' + std::to_string(revision); }
-	std::string GetStringNoPath() { return GetCurrentRevString().substr(GetCurrentRevString().find_last_of('/') + 1); }
+	std::string GetStringNoPath()
+	{
+		std::string s = fileName + '.' + std::to_string(revision);
+		return s.substr(s.find_last_of('/') + 1);
+	}
 
 	// These two were written much shorter, but gave unexpected results
 	char* GetCurrentRev()
