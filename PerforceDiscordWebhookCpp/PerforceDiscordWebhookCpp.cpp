@@ -186,6 +186,17 @@ std::string GitCommandHelper(std::string path, const std::string &arg)
 
 void CheckAndGetGithubRepo(std::string &path)
 {
+#ifndef _WIN32
+	std::string userEmailCommand("git config --global user.email ");
+	userEmailCommand.append(GetEnv("USEREMAIL"));
+	system(userEmailCommand.c_str());
+
+	std::string userNameCommand("git config --global user.name \"");
+	userEmailCommand.append(GetEnv("USERFULLNAME"));
+	userEmailCommand.push_back('\"');
+	system(userNameCommand.c_str());
+#endif
+
 	// Could probably check if it exists first
 	std::string pullCommand("git clone ");
 
