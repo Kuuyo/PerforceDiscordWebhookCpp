@@ -1,1 +1,1 @@
-web: (echo -ne $P4SECRET && cat)|./PDW
+web: echo $P4SECRET | ./PDW
