@@ -74,9 +74,13 @@ struct FileData;
 struct Changelist;
 void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
 
-void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &cl, std::vector<FileData> &outFiles);
+void ParseFiles(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles);
 
-void ParseDiffs(ClientUserEx &cu, ClientApi &client, FileData &fileData);
+void ParseDiffs(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, FileData &fileData);
+
+void CreateDiffHTML(std::vector<std::string> &diffVec, const Changelist &clStrct, FileData &fileData);
+
+void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out);
 
 void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData);
 
@@ -330,6 +334,7 @@ struct FileData
 	bool IsFirstRevision() { return revision == 1; }
 
 	std::string GetCurrentRevString() { return fileName + '#' + std::to_string(revision); }
+	std::string GetStringNoPath() { return GetCurrentRevString().substr(GetCurrentRevString().find_last_of('/')); }
 
 	// These two were written much shorter, but gave unexpected results
 	char* GetCurrentRev()
@@ -487,14 +492,14 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 		clStrct.description = data;
 
 		std::vector<FileData> files;
-		ParseFiles(cu, client, cl, files);
+		ParseFiles(cu, client, clStrct, cl, files);
 		clStrct.files = files;
 
 		changelistStructs.push_back(clStrct);
 	}
 }
 
-void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &cl, std::vector<FileData> &outFiles)
+void ParseFiles(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles)
 {
 	std::string filterPath(GetEnv("P4FILTERPATH"));
 	filterPath = filterPath.substr(0, filterPath.size() - 3); // As a filterpath ends in 3 dots
@@ -525,13 +530,13 @@ void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &cl, std:
 			continue;
 		}
 
-		ParseDiffs(cu, client, fileData);
+		ParseDiffs(cu, client, clStrct, fileData);
 
 		outFiles.push_back(fileData);
 	}
 }
 
-void ParseDiffs(ClientUserEx &cu, ClientApi &client, FileData &fileData)
+void ParseDiffs(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, FileData &fileData)
 {
 	GetDiff(cu, client, fileData);
 
@@ -553,12 +558,130 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, FileData &fileData)
 		std::cout << "WARNING: Error parsing diff:\n" << diff << std::endl;
 	}
 
-	std::cout << diff << std::endl;
+	std::string line;
+	std::istringstream stream(diff);
+	std::vector<std::string> diffVec;
+
+	while (std::getline(stream, line))
+	{
+		diffVec.push_back(line);
+	}
+
+	CreateDiffHTML(diffVec, clStrct, fileData);
 }
 
-void CreateDiffHTML()
+void CreateDiffHTML(std::vector<std::string> &diffVec, const Changelist &clStrct, FileData &fileData)
 {
+	std::string diffInfo;
+	DiffInfoToHTML(diffVec, diffInfo);
+	
+	std::vector<std::string> html;
+	html.push_back("<!DOCTYPE html>\n");
+	html.push_back("<html>\n");
+	html.push_back("<head>\n");
+	html.push_back("<link rel=\"stylesheet\" type=\"text/css\" href=\"styles.css\">\n");
+	html.push_back("<script src=\"https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js\"></script>\n");
+	html.push_back("</head>\n");
+	html.push_back("<body>\n");
+	html.push_back("<h1>\n");
+	html.push_back("Changelist: <b>" + std::to_string(clStrct.id) + "</b>\n");
+	html.push_back("</h1>\n");
+	html.push_back("<h2>\n");
+	html.push_back("Author: <b>" + clStrct.author + "</b>\n");
+	html.push_back("</h2>\n");
+	html.push_back("<h3>\n");
+	html.push_back("File: <b>" + fileData.GetCurrentRevString() + "</b>\n");
+	html.push_back("</h3>\n");
+	html.push_back(diffInfo);
+	html.push_back("</body>\n");
+	html.push_back("</html\n>");
 
+	std::string filePath("Diffs/");
+	filePath.append(fileData.GetStringNoPath());
+	filePath.append(".html");
+
+	WriteFile(html, filePath);
+}
+
+void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out)
+{
+	// Shamelessly copied from myself!
+	// Basically just a port of what I had in the .NET version
+	size_t lastHeadIndex = 0;
+	std::string changeSpecifiers("acd");
+	std::regex headRgx("^\\d.+");
+	std::regex subRgx("^---");
+	std::string lineNumber2 = "";
+	for (size_t i = 0; i < diffVec.size(); ++i)
+	{
+		if (std::regex_match(diffVec[i], headRgx))
+		{
+			lastHeadIndex = i;
+
+			if (i > 0)
+				diffVec[i - 1].append("\n</pre>\n</div>\n");
+
+			size_t commaIndex1 = diffVec[i].find(',', 0);
+			std::string lineNumber1 = "";
+
+			size_t changeSpecifierIndex = diffVec[i].find_first_of(changeSpecifiers);
+
+			if (commaIndex1 < changeSpecifierIndex && commaIndex1 > 0)
+				lineNumber1 = diffVec[i].substr(0, commaIndex1);
+			else
+				lineNumber1 = diffVec[i].substr(0, changeSpecifierIndex);
+
+			size_t commaIndex2 = diffVec[i].find(',', changeSpecifierIndex);
+
+			if (commaIndex2 > 0)
+				lineNumber2 = diffVec[i].substr(changeSpecifierIndex + 1, commaIndex2 - changeSpecifierIndex - 1);
+			else
+				lineNumber2 = diffVec[i].substr(changeSpecifierIndex + 1, diffVec[i].size() - changeSpecifierIndex - 1);
+
+			std::string preSpecifier = "\n<div class=\"block\">\n<h4>\n";
+			std::string postSpecifier = "\n</h4>\n<pre class=\"prettyprint lang-csharp linenums:" + lineNumber1;
+
+			char changeSpecifier = diffVec[i].at(changeSpecifierIndex);
+			switch (changeSpecifier)
+			{
+			case 'a':
+				diffVec[i] = preSpecifier + "Add:" + postSpecifier + " add\">";
+				break;
+			case 'c':
+				diffVec[i] = preSpecifier + "Change:" + postSpecifier + " delete\">";
+				break;
+			case 'd':
+				diffVec[i] = preSpecifier + "Delete:" + postSpecifier + " delete\">";
+				break;
+			default:
+				std::cout << "Unknown Change Specifier: " << changeSpecifier << std::endl;
+				break;
+			}
+		}
+		else if (std::regex_match(diffVec[i], subRgx))
+		{
+			lastHeadIndex = i;
+			diffVec[i] = "\n</pre>\n<pre class=\"prettyprint lang-csharp linenums:" + lineNumber2 + " add\">";
+		}
+		else
+		{
+			if (diffVec[i].size() > 0)
+			{
+				diffVec[lastHeadIndex] += "\n" + diffVec[i].substr(1);
+				diffVec[i] = "";
+			}
+		}
+	}
+
+	diffVec.push_back("</pre>\n</div>");
+
+	diffVec.erase(std::remove(diffVec.begin(), diffVec.end(), ""), diffVec.end());
+
+	const char* const delim = "\n";
+	std::ostringstream cat;
+	std::copy(diffVec.begin(), diffVec.end(), std::ostream_iterator<std::string>(cat, delim));
+
+	out = cat.str();
 }
 
 void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData)
