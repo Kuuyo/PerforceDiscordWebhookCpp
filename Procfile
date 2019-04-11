@@ -1,1 +1,1 @@
-web: echo $P4SECRET | ./PDW
+worker: echo $P4SECRET | ./PDW
