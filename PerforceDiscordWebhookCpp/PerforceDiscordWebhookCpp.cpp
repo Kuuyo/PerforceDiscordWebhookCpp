@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 
 		SendWebhookMessage(cu, unsyncedChangelists);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(300000));
+		std::this_thread::sleep_for(std::chrono::milliseconds(60000));
 	}
 
 	Close(client, e, msg);
