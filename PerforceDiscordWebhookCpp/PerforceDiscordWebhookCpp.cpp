@@ -3,6 +3,8 @@
 #include <vector>
 #include <regex>
 #include <fstream>
+#include <chrono>
+#include <thread>
 
 #include "include/p4/clientapi.h"
 #include "include/json.hpp"
@@ -119,10 +121,15 @@ int main(int argc, char* argv[])
 	std::string path;
 	CheckAndGetGithubRepo(path);
 
-	std::vector<Changelist> unsyncedChangelists;
-	CheckForUnsyncedChangeLists(cu, client, 5, path, unsyncedChangelists);
+	while (true)
+	{
+		std::vector<Changelist> unsyncedChangelists;
+		CheckForUnsyncedChangeLists(cu, client, 5, path, unsyncedChangelists);
 
-	SendWebhookMessage(cu, unsyncedChangelists);
+		SendWebhookMessage(cu, unsyncedChangelists);
+
+		std::this_thread::sleep_for(std::chrono::minutes(5));
+	}
 
 	Close(client, e, msg);
 
