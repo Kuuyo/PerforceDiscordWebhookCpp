@@ -151,7 +151,7 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 	client.Init(&e);
 
 #ifndef _WIN32
-	client.Run("login", &cu);
+	//client.Run("login", &cu);
 #endif
 
 	if (e.Test())
