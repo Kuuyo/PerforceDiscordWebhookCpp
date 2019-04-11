@@ -43,6 +43,8 @@ private:
 struct FileData;
 struct Changelist;
 
+char* GetEnv(const char* varName);
+
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc);
 
 void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, std::vector<Changelist> &changelistStructs);
@@ -130,7 +132,7 @@ void ClientUserEx::OutputText(const char *data, int)
 	m_Data.push_back('\n');
 }
 
-inline char* GetEnv(const char* varName)
+char* GetEnv(const char* varName)
 {
 	// Visual Studio complains when I use getenv
 #ifdef _WIN32
