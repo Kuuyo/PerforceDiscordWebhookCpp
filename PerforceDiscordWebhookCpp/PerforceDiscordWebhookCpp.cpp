@@ -89,6 +89,12 @@ void WriteFile(const std::vector<std::string> &data, const std::string &fileName
 
 void WriteFile(const std::string &data, const std::string &fileName);
 
+std::string GetUserImage(const std::string &user);
+
+int32_t GetColor(const Changelist &cl);
+
+int32_t GetColor(const FileData &file);
+
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs);
 
 void Close(ClientApi &client, Error &e, StrBuf &msg);
@@ -480,7 +486,7 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 
 		rgx = ("( on )(.+)($)");
 		ExtractSingleLineData(cl, rgx, data);
-		clStrct.timestamp = data;
+		clStrct.timestamp = std::regex_replace(data, std::regex("/"), "-");
 
 		rgx = ("(^\\t)(.+)($)");
 		ExtractMultiLineDataFullString(cl, rgx, data);
@@ -743,6 +749,65 @@ void WriteFile(const std::string &data, const std::string &fileName)
 	file.close();
 }
 
+std::string GetUserImage(const std::string &user)
+{
+	if (user == GetEnv("USER1"))
+	{
+		return GetEnv("U1ICON");
+	}
+	else if (user == GetEnv("USER2"))
+	{
+		return GetEnv("U2ICON");
+	}
+	else if (user == GetEnv("USER3"))
+	{
+		return GetEnv("U3ICON");
+	}
+	else if (user == GetEnv("USER4"))
+	{
+		return GetEnv("U4ICON");
+	}
+	else if (user == GetEnv("USER5"))
+	{
+		return GetEnv("U5ICON");
+	}
+	else
+	{
+		std::cout << "User not found!: " << user << std::endl;
+		return std::string();
+	}
+}
+
+int32_t GetColor(const Changelist &cl)
+{
+	bool bHasEdit = false;
+	bool bHasAdd = false;
+	bool bHasDelete = false;
+
+	for (const auto& file : cl.files)
+	{
+		if (file.action == "edit")
+			bHasEdit = true;
+		else if (file.action == "add")
+			bHasAdd = true;
+		else
+			bHasDelete = true;
+	}
+
+	// Discord embed uses decimal colours, so I thought this was a pretty cool way to solve that
+	return ((bHasEdit ? 1 : 0) * 255) + ((bHasAdd ? 1 : 0) * 65280) + ((bHasDelete ? 1 : 0) * 16711680);
+}
+
+int32_t GetColor(const FileData &file)
+{
+	if (file.action == "edit")
+		return 255;
+	else if (file.action == "add")
+		return 65280;
+	else
+		return 16711680;
+}
+
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs)
 {
 	for (const auto &cl : changelistStructs)
@@ -766,18 +831,39 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 			{
 				{"author",
 					{
-						{"name", cl.author}
+						{"name", cl.author},
+						{"icon_url", GetUserImage(cl.author)}
 					}
 				},
+				{"color", GetColor(cl)},
 				{"title", cl.description},
+				{"url", GetEnv("EMBEDURL")},
 				{"description", cl.workspace},
+				{"thumbnail",
+					{
+						{"url",GetEnv("EMBEDTHUMB")}
+					}
+				},
 				{"footer",
 					{
-						{"text", "Helix Core"}
+						{"text", "Helix Core"},
+						{"icon_url", GetEnv("P4AVATAR")}
 					}
-				}
+				},
+				{"timestamp", cl.timestamp}
 			}
 		};
+
+		for (auto file : cl.files)
+		{
+			message["embeds"].push_back(
+				{
+					{"title", file.action + " " + file.type},
+					{"description", file.GetCurrentRevString()},
+					{"color", GetColor(file)}
+				}
+			);
+		}
 
 		std::string jsonStr = message.dump();
 
