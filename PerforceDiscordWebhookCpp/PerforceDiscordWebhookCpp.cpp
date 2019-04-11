@@ -193,7 +193,7 @@ void CheckAndGetGithubRepo(std::string &path)
 
 	std::string userNameCommand("git config --global user.name \"");
 	userEmailCommand.append(GetEnv("USERFULLNAME"));
-	userEmailCommand.push_back('\"');
+	userEmailCommand.push_back('"');
 	system(userNameCommand.c_str());
 #endif
 
