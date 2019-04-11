@@ -164,6 +164,7 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 	char *loginArg[] = { (char*)"-a" };
 	client.SetArgv(1, loginArg);
 	client.Run("login", &cu);
+	std::cout << std::endl;
 #endif
 
 	if (e.Test())
@@ -193,8 +194,10 @@ void CheckAndGetGithubRepo(std::string &path)
 
 	std::string userNameCommand("git config --global user.name \"");
 	userEmailCommand.append(GetEnv("USERFULLNAME"));
-	userEmailCommand.push_back('"');
+	userEmailCommand.push_back('\"');
 	system(userNameCommand.c_str());
+
+	std::cout << userNameCommand << std::endl;
 #endif
 
 	// Could probably check if it exists first
