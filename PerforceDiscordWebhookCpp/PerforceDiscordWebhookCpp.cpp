@@ -40,7 +40,7 @@ private:
 	std::string m_Data;
 };
 
-void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg);
+void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc);
 
 void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
 
@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
 	StrBuf msg;
 	Error e;
 
-	Login(cu, client, e, msg);
+	Login(cu, client, e, msg, argc);
 
 	CheckForUnsyncedChangeLists(cu, client, 5);
 
@@ -138,14 +138,17 @@ inline char* GetEnv(const char* varName)
 	return buff;
 }
 
-void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg)
+void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 {
 	client.Init(&e);
 
 #ifndef _WIN32
-	char *loginArg[] = { (char*)"-a" };
-	client.SetArgv(1, loginArg);
-	client.Run("login", &cu);
+	if (argc > 1)
+	{
+		char *loginArg[] = { (char*)"-a" };
+		client.SetArgv(1, loginArg);
+		client.Run("login", &cu);
+	}
 #endif
 
 	if (e.Test())
