@@ -249,6 +249,10 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 
 		ParseChangelists(cu, client, path, changelistStructs);
 	}
+	else
+	{
+		std::cout << "No changes." << std::endl;
+	}
 }
 
 void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts)
