@@ -40,9 +40,12 @@ private:
 	std::string m_Data;
 };
 
+struct FileData;
+struct Changelist;
+
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc);
 
-void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
+void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, std::vector<Changelist> &changelistStructs);
 
 void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
 
@@ -60,7 +63,7 @@ std::vector<char> ReadFile(const std::string &fileName);
 
 void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs);
 
-void ParseChangelists(ClientUserEx &cu, ClientApi &client);
+void ParseChangelists(ClientUserEx &cu, ClientApi &client, std::vector<Changelist> &changelistStructs);
 
 void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
 
@@ -70,8 +73,6 @@ void ExtractMultiLineDataFullString(const std::string &data, const std::regex &r
 
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
 
-struct FileData;
-struct Changelist;
 void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
 
 void ParseFiles(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles);
@@ -86,7 +87,9 @@ void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData);
 
 void WriteFile(const std::vector<std::string> &data, const std::string &fileName);
 
-void SendWebhookMessage(ClientUserEx &cu);
+void WriteFile(const std::string &data, const std::string &fileName);
+
+void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs);
 
 void Close(ClientApi &client, Error &e, StrBuf &msg);
 
@@ -100,11 +103,10 @@ int main(int argc, char* argv[])
 
 	Login(cu, client, e, msg, argc);
 
-	CheckForUnsyncedChangeLists(cu, client, 5);
+	std::vector<Changelist> changelistStructs;
+	CheckForUnsyncedChangeLists(cu, client, 5, changelistStructs);
 
-#ifndef TESTING
-	SendWebhookMessage(cu);
-#endif // DEBUG
+	SendWebhookMessage(cu, changelistStructs);
 
 	Close(client, e, msg);
 
@@ -159,7 +161,7 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 	}
 }
 
-void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts)
+void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, std::vector<Changelist> &changelistStructs)
 {	
 	GetLatestChangeListsFromServer(cu, client, nrOfChngLsts);
 
@@ -178,7 +180,7 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 #endif
 		GetDescriptionsOfChangelists(cu, client, unsyncedNrs);
 
-		ParseChangelists(cu, client);
+		ParseChangelists(cu, client, changelistStructs);
 	}
 }
 
@@ -380,15 +382,12 @@ struct Changelist
 	std::vector<FileData> files;
 };
 
-void ParseChangelists(ClientUserEx &cu, ClientApi &client)
+void ParseChangelists(ClientUserEx &cu, ClientApi &client, std::vector<Changelist> &changelistStructs)
 {
 	std::vector<std::string> changelists;
 	ExtractChangelists(cu, changelists);
 	
-	std::vector<Changelist> changelistStructs;
 	StoreChangelistsDataInStruct(cu, client, changelists, changelistStructs);
-
-
 }
 
 void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
@@ -735,27 +734,75 @@ void WriteFile(const std::vector<std::string> &data, const std::string &fileName
 	file.close();
 }
 
-void SendWebhookMessage(ClientUserEx &cu)
+void WriteFile(const std::string &data, const std::string &fileName)
 {
-	json message{};
+	std::ofstream file(fileName, std::ios::binary);
+
+	if (!file.is_open())
+	{
+		std::cout << "Could not create file: " << fileName << "\n";
+		exit(-1);
+	}
+
+	std::vector<char> newFile;
+
+	for (const auto &c : data)
+		newFile.push_back(c);
+
+	file.write(newFile.data(), newFile.size());
+
+	file.close();
+}
+
+void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs)
+{
+	for (const auto &cl : changelistStructs)
+	{
+		json message{};
 
 #ifdef _WIN32
-	message["\"username\""] = "\"Perforce C++ Bot\"";
+		message["username"] = "Perforce C++ Bot";
 #else
-	message["\"username\""] = "\"Perforce C++ Bot Heroku\"";
-#endif	
-	message["\"content\""] = "\"Some changelist number\"";
+		message["username"] = "Perforce C++ Bot Heroku";
+#endif		
+		std::string content;
+		content.append("Perforce change ");
+		content.append(std::to_string(cl.id));
+		message["content"] = content;
+		
+		message["avatar_url"] = GetEnv("P4AVATAR");
 
-	std::string jsonStr = message.dump();
+		message["embeds"] =
+		{
+			{
+				{"author",
+					{
+						{"name", cl.author}
+					}
+				},
+				{"title", cl.description},
+				{"description", cl.workspace},
+				{"footer",
+					{
+						{"text", "Helix Core"}
+					}
+				}
+			}
+		};
 
-	std::string webhookCommand("curl -H \"Content-Type:application/json;charset=UTF-8\" -X POST -d ");
-	webhookCommand.append(jsonStr);
-	webhookCommand += ' ';
+		std::string jsonStr = message.dump();
 
-	char* discordWebHook = GetEnv("DISCORDWEBHOOK");
-	webhookCommand.append(discordWebHook);
+		WriteFile(jsonStr, "message.json");
 
-	system(webhookCommand.c_str());
+		std::string webhookCommand("curl -H \"Content-Type:application/json;charset=UTF-8\" -X POST -d @");
+		webhookCommand.append("message.json");
+		webhookCommand += ' ';
+
+		char* discordWebHook = GetEnv("DISCORDWEBHOOK");
+		webhookCommand.append(discordWebHook);
+
+		system(webhookCommand.c_str());
+	}
 }
 
 void Close(ClientApi &client, Error &e, StrBuf &msg)
