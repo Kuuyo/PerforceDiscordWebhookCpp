@@ -783,7 +783,7 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 
 		WriteFile(jsonStr, "message.json");
 
-		std::string webhookCommand("curl -H \"Content-Type:application/json;charset=UTF-8\" -X POST -d @");
+		std::string webhookCommand("curl -s -S -H \"Content-Type:application/json;charset=UTF-8\" -X POST -d @");
 		webhookCommand.append("message.json");
 		webhookCommand += ' ';
 
