@@ -11,8 +11,6 @@
 
 using json = nlohmann::json;
 
-#define TESTING
-
 #ifdef _WIN32
 #pragma comment(lib, "libclient.lib")
 #pragma comment(lib, "librpc.lib")
@@ -244,10 +242,9 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 	FetchUnsyncedNrs(cacheFileName, changeListNrs, unsyncedNrs);
 
 	if (unsyncedNrs.size() > 0)
-	{		
-#ifndef TESTING
+	{
 		WriteFile(unsyncedNrs, cacheFileName);
-#endif
+
 		GetDescriptionsOfChangelists(cu, client, unsyncedNrs);
 
 		ParseChangelists(cu, client, path, changelistStructs);
