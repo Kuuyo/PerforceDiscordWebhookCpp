@@ -24,6 +24,7 @@ using json = nlohmann::json;
 
 // Just putting it here for now so I don't have to edit the Makefile..
 // TODO: move all these functions and stuff somewhere else so it's not all in one file
+
 class ClientUserEx : public ClientUser
 {
 public:
@@ -43,9 +44,14 @@ private:
 struct FileData;
 struct Changelist;
 
+#pragma region forwardDeclFuncs
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc);
 
-void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, std::vector<Changelist> &changelistStructs);
+std::string GitCommandHelper(std::string path, const std::string &arg);
+
+void CheckAndGetGithubRepo(std::string &path);
+
+void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path, std::vector<Changelist> &changelistStructs);
 
 void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
 
@@ -63,7 +69,7 @@ std::vector<char> ReadFile(const std::string &fileName);
 
 void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs);
 
-void ParseChangelists(ClientUserEx &cu, ClientApi &client, std::vector<Changelist> &changelistStructs);
+void ParseChangelists(ClientUserEx &cu, ClientApi &client, const std::string &path, std::vector<Changelist> &changelistStructs);
 
 void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
 
@@ -73,13 +79,13 @@ void ExtractMultiLineDataFullString(const std::string &data, const std::regex &r
 
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
 
-void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
+void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::string &path, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
 
-void ParseFiles(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles);
+void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles);
 
-void ParseDiffs(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, FileData &fileData);
+void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, FileData &fileData);
 
-void CreateDiffHTML(std::vector<std::string> &diffVec, const Changelist &clStrct, FileData &fileData);
+void CreateDiffHTML(std::vector<std::string> &diffVec, const std::string &path, const Changelist &clStrct, FileData &fileData);
 
 void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out);
 
@@ -98,6 +104,7 @@ int32_t GetColor(const FileData &file);
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs);
 
 void Close(ClientApi &client, Error &e, StrBuf &msg);
+#pragma endregion
 
 ///////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
@@ -109,10 +116,13 @@ int main(int argc, char* argv[])
 
 	Login(cu, client, e, msg, argc);
 
-	std::vector<Changelist> changelistStructs;
-	CheckForUnsyncedChangeLists(cu, client, 5, changelistStructs);
+	std::string path;
+	CheckAndGetGithubRepo(path);
 
-	SendWebhookMessage(cu, changelistStructs);
+	std::vector<Changelist> unsyncedChangelists;
+	CheckForUnsyncedChangeLists(cu, client, 5, path, unsyncedChangelists);
+
+	SendWebhookMessage(cu, unsyncedChangelists);
 
 	Close(client, e, msg);
 
@@ -164,7 +174,46 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 	}
 }
 
-void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, std::vector<Changelist> &changelistStructs)
+std::string GitCommandHelper(std::string path, const std::string &arg)
+{
+	std::string command("git -C ");
+	path.pop_back();
+	command.append(path);
+	command.push_back(' ');
+	command.append(arg);
+	return command;
+}
+
+void CheckAndGetGithubRepo(std::string &path)
+{
+	// Could probably check if it exists first
+	std::string pullCommand("git clone ");
+
+	std::string repo(GetEnv("GITHUBREPO"));
+	size_t slashPos = repo.find('/');
+	slashPos += 2;
+
+	std::string login(GetEnv("GITHUBUSER"));
+	login.push_back(':');
+	login.append(GetEnv("GITHUBTOKEN"));
+	login.push_back('@');
+
+	repo.insert(slashPos, login);
+
+	pullCommand.append(repo);
+
+	system(pullCommand.c_str());
+
+	slashPos = repo.find_last_of('/');
+	++slashPos;
+	repo = repo.substr(slashPos, repo.size() - slashPos - 4);
+
+	path = repo + "/";
+
+	system(GitCommandHelper(path, " pull").c_str());
+}
+
+void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path, std::vector<Changelist> &changelistStructs)
 {	
 	GetLatestChangeListsFromServer(cu, client, nrOfChngLsts);
 
@@ -183,7 +232,7 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 #endif
 		GetDescriptionsOfChangelists(cu, client, unsyncedNrs);
 
-		ParseChangelists(cu, client, changelistStructs);
+		ParseChangelists(cu, client, path, changelistStructs);
 	}
 }
 
@@ -385,12 +434,12 @@ struct Changelist
 	std::vector<FileData> files;
 };
 
-void ParseChangelists(ClientUserEx &cu, ClientApi &client, std::vector<Changelist> &changelistStructs)
+void ParseChangelists(ClientUserEx &cu, ClientApi &client, const std::string &path, std::vector<Changelist> &changelistStructs)
 {
 	std::vector<std::string> changelists;
 	ExtractChangelists(cu, changelists);
 	
-	StoreChangelistsDataInStruct(cu, client, changelists, changelistStructs);
+	StoreChangelistsDataInStruct(cu, client, path, changelists, changelistStructs);
 }
 
 void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
@@ -464,7 +513,7 @@ void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 	cu.ClearBuffer();
 }
 
-void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs)
+void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::string &path, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs)
 {
 	for (const std::string &cl : changelists)
 	{
@@ -493,14 +542,16 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 		clStrct.description = data;
 
 		std::vector<FileData> files;
-		ParseFiles(cu, client, clStrct, cl, files);
+		ParseFiles(cu, client, path, clStrct, cl, files);
 		clStrct.files = files;
 
 		changelistStructs.push_back(clStrct);
 	}
+
+	system(GitCommandHelper(path, " push").c_str());
 }
 
-void ParseFiles(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles)
+void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles)
 {
 	std::string filterPath(GetEnv("P4FILTERPATH"));
 	filterPath = filterPath.substr(0, filterPath.size() - 3); // As a filterpath ends in 3 dots
@@ -531,13 +582,15 @@ void ParseFiles(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, 
 			continue;
 		}
 
-		ParseDiffs(cu, client, clStrct, fileData);
+		ParseDiffs(cu, client, path, clStrct, fileData);
 
 		outFiles.push_back(fileData);
 	}
+
+	system(GitCommandHelper(path, " commit -m heroku").c_str());
 }
 
-void ParseDiffs(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, FileData &fileData)
+void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, FileData &fileData)
 {
 	GetDiff(cu, client, fileData);
 
@@ -568,10 +621,10 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const Changelist &clStrct, 
 		diffVec.push_back(line);
 	}
 
-	CreateDiffHTML(diffVec, clStrct, fileData);
+	CreateDiffHTML(diffVec, path, clStrct, fileData);
 }
 
-void CreateDiffHTML(std::vector<std::string> &diffVec, const Changelist &clStrct, FileData &fileData)
+void CreateDiffHTML(std::vector<std::string> &diffVec, const std::string &path, const Changelist &clStrct, FileData &fileData)
 {
 	std::string diffInfo;
 	DiffInfoToHTML(diffVec, diffInfo);
@@ -597,15 +650,19 @@ void CreateDiffHTML(std::vector<std::string> &diffVec, const Changelist &clStrct
 	html.push_back("</body>\n");
 	html.push_back("</html\n>");
 
+	std::string file(fileData.GetStringNoPath());
+	file.append(".html");
+
 	std::string filePath;
-#ifndef _WIN32
-	filePath.append("PerforceDiscordWebhookCpp/");
-#endif
-	filePath.append("Diffs/");
-	filePath.append(fileData.GetStringNoPath());
-	filePath.append(".html");
+	filePath.append(path);
+	filePath.append(file);
 
 	WriteFile(html, filePath);
+
+	std::string command(" add ");
+	command.append(file);
+
+	system(GitCommandHelper(path, command).c_str());
 }
 
 void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out)
@@ -860,7 +917,8 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 				{
 					{"title", file.action + " " + file.type},
 					{"description", file.GetCurrentRevString()},
-					{"color", GetColor(file)}
+					{"color", GetColor(file)},
+					{"url", GetEnv("GITHUBPAGESFULLPATH") + file.GetStringNoPath()}
 				}
 			);
 		}
