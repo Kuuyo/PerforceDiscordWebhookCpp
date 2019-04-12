@@ -8,6 +8,7 @@
 
 #include "include/p4/clientapi.h"
 #include "include/json.hpp"
+#include "Helpers.h"
 
 using json = nlohmann::json;
 
@@ -47,35 +48,19 @@ struct Changelist;
 #pragma region forwardDeclFuncs
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc);
 
-std::string GitCommandHelper(std::string path, const std::string &arg);
-
 void CheckAndGetGithubRepo(std::string &path);
 
 void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path, std::vector<Changelist> &changelistStructs);
 
 void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
 
-// Extracts the second capture group of the regex given
-void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
-
-// Extracts the second capture group of the regex given
-void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::string &outData);
-
 void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs);
 
 void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::string> &changeListNrs, std::vector<std::string> &unsyncedNrs);
 
-std::vector<char> ReadFile(const std::string &fileName);
-
 void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs);
 
 void ParseChangelists(ClientUserEx &cu, ClientApi &client, const std::string &path, std::vector<Changelist> &changelistStructs);
-
-void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
-
-void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData);
-
-void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::string &outData);
 
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
 
@@ -90,16 +75,6 @@ void CreateDiffHTML(std::vector<std::string> &diffVec, const std::string &path, 
 void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out);
 
 void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData);
-
-void WriteFile(const std::vector<std::string> &data, const std::string &fileName);
-
-void WriteFile(const std::string &data, const std::string &fileName);
-
-std::string GetUserImage(const std::string &user);
-
-int32_t GetColor(const Changelist &cl);
-
-int32_t GetColor(const FileData &file);
 
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs);
 
@@ -147,20 +122,6 @@ void ClientUserEx::OutputText(const char *data, int)
 	m_Data.push_back('\n');
 }
 
-inline char* GetEnv(const char* varName)
-{
-	// Visual Studio complains when I use getenv
-#ifdef _WIN32
-	char* buff = new char[125];
-	size_t nrOfElmnts = 0;
-	_dupenv_s(&buff, &nrOfElmnts, varName);
-#else
-	char* buff = getenv(varName);
-#endif
-
-	return buff;
-}
-
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 {
 	client.Init(&e);
@@ -178,16 +139,6 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 		fprintf(stderr, "%s\n", msg.Text());
 		exit(1);
 	}
-}
-
-std::string GitCommandHelper(std::string path, const std::string &arg)
-{
-	std::string command("git -C ");
-	path.pop_back();
-	command.append(path);
-	command.push_back(' ');
-	command.append(arg);
-	return command;
 }
 
 void CheckAndGetGithubRepo(std::string &path)
@@ -267,35 +218,6 @@ void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_
 	// Don't need to return anything as it gets stored in m_Data in ClientUserEx
 }
 
-// Extracts the second capture group of the regex given
-void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
-{
-	std::istringstream dataStream(data);
-
-	std::string dataLine = "";
-	std::smatch sm;
-
-	while (std::getline(dataStream, dataLine, '\n'))
-	{
-		if (std::regex_search(dataLine, sm, rgx))
-		{
-			std::string dataString(sm[2]);
-			dataString.push_back('\n');
-			outData.push_back(dataString);
-		}
-	}
-}
-
-// Extracts the second capture group of the regex given
-void ExtractSingleLineData(const std::string &data, const std::regex &rgx, std::string &outData)
-{
-	std::vector<std::string> temp;
-	ExtractSingleLineData(data,rgx,temp);
-
-	outData = temp[0];
-	outData.pop_back();
-}
-
 void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs)
 {
 	changeListNrs.reserve(nrOfChngLsts);
@@ -365,23 +287,6 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 	}
 }
 
-std::vector<char> ReadFile(const std::string &fileName)
-{
-	std::ifstream file(fileName, std::ios::binary);
-
-	if (!file.is_open())
-	{
-		std::cout << "File not found: " << fileName << "\n> New cache file will be made\n\n";
-		return std::vector<char>();
-	}
-
-	std::vector<char> fileVec((std::istreambuf_iterator<char>(file)), (std::istreambuf_iterator<char>()));
-
-	file.close();
-
-	return fileVec;
-}
-
 void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs)
 {
 	for (auto clId : unsyncedNrs)
@@ -400,128 +305,12 @@ void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std
 	// Don't need to return anything as it gets stored in m_Data in ClientUserEx
 }
 
-struct FileData
-{
-	std::string fileName;
-	uint32_t revision;
-	std::string action; // TODO: Replace by an enum?
-	std::string type; // TODO: Replace by an enum?
-
-	bool IsFirstRevision() { return revision == 1; }
-
-	std::string GetCurrentRevString() { return fileName + '#' + std::to_string(revision); }
-	std::string GetStringNoPath()
-	{
-		std::string s = fileName + '.' + std::to_string(revision);
-		return s.substr(s.find_last_of('/') + 1);
-	}
-
-	// These two were written much shorter, but gave unexpected results
-	char* GetCurrentRev()
-	{
-		std::string s(fileName);
-		s.push_back('#');
-		s.append(std::to_string(revision));
-#ifdef _WIN32
-		return _strdup(s.c_str());
-#else
-		return strdup(s.c_str());
-#endif		
-	}
-
-	char* GetPreviousRev()
-	{
-		std::string s(fileName);
-		s.push_back('#');
-		uint32_t r = revision - 1;
-		s.append(std::to_string(r));
-#ifdef _WIN32
-		return _strdup(s.c_str());
-#else
-		return strdup(s.c_str());
-#endif	
-	}
-};
-
-struct Changelist
-{
-	uint32_t id;
-	std::string author;
-	std::string workspace;
-	std::string timestamp;
-	std::string description;
-	std::vector<FileData> files;
-};
-
 void ParseChangelists(ClientUserEx &cu, ClientApi &client, const std::string &path, std::vector<Changelist> &changelistStructs)
 {
 	std::vector<std::string> changelists;
 	ExtractChangelists(cu, changelists);
 	
 	StoreChangelistsDataInStruct(cu, client, path, changelists, changelistStructs);
-}
-
-void ExtractMultiLineData(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
-{
-	// Slight repeat of code from ExtractSingleLineData,
-	// but then storing the multi lines of data from a single line
-	// I'd rather keep them two seperate functions to not add more conditionals internally
-
-	std::istringstream dataStream(data);
-
-	std::string dataLine = "";
-	std::string dataCat = "";
-	std::smatch sm;
-
-	while (std::getline(dataStream, dataLine, '\n'))
-	{
-		if (std::regex_search(dataLine, sm, rgx))
-		{
-			if (!dataCat.empty())
-				outData.push_back(dataCat);
-
-			dataCat = "";
-			dataCat.append(dataLine);
-		}
-		else
-		{
-			dataCat.append(dataLine);
-			dataCat.push_back('\n');
-		}
-	}
-
-	if (!dataCat.empty())
-		outData.push_back(dataCat);
-}
-
-void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::vector<std::string> &outData)
-{
-	std::istringstream dataStream(data);
-
-	std::string dataLine = "";
-	std::smatch sm;
-
-	while (std::getline(dataStream, dataLine, '\n'))
-	{
-		if (std::regex_search(dataLine, sm, rgx))
-		{
-			std::string dataString(sm[2]);
-			outData.push_back(dataString);
-		}
-	}
-}
-
-void ExtractMultiLineDataFullString(const std::string &data, const std::regex &rgx, std::string &outData)
-{
-	std::vector<std::string> temp;
-	ExtractMultiLineDataFullString(data, rgx, temp);
-
-	outData = "";
-	for (const auto &str : temp)
-	{
-		outData.append(str);
-		outData.push_back('\n');
-	}
 }
 
 void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
@@ -782,106 +571,6 @@ void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData)
 
 	// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_diff2.html
 	client.Run("diff2", &cu);
-}
-
-void WriteFile(const std::vector<std::string> &data, const std::string &fileName)
-{
-	std::ofstream file(fileName, std::ios::binary);
-
-	if (!file.is_open())
-	{
-		std::cout << "Could not create file: " << fileName << "\n";
-		exit(-1);
-	}
-
-	std::vector<char> newFile;
-
-	for (const auto &clnr : data)
-		for (const auto &c : clnr)
-			newFile.push_back(c);
-
-	file.write(newFile.data(), newFile.size());
-
-	file.close();
-}
-
-void WriteFile(const std::string &data, const std::string &fileName)
-{
-	std::ofstream file(fileName, std::ios::binary);
-
-	if (!file.is_open())
-	{
-		std::cout << "Could not create file: " << fileName << "\n";
-		exit(-1);
-	}
-
-	std::vector<char> newFile;
-
-	for (const auto &c : data)
-		newFile.push_back(c);
-
-	file.write(newFile.data(), newFile.size());
-
-	file.close();
-}
-
-std::string GetUserImage(const std::string &user)
-{
-	if (user == GetEnv("USER1"))
-	{
-		return GetEnv("U1ICON");
-	}
-	else if (user == GetEnv("USER2"))
-	{
-		return GetEnv("U2ICON");
-	}
-	else if (user == GetEnv("USER3"))
-	{
-		return GetEnv("U3ICON");
-	}
-	else if (user == GetEnv("USER4"))
-	{
-		return GetEnv("U4ICON");
-	}
-	else if (user == GetEnv("USER5"))
-	{
-		return GetEnv("U5ICON");
-	}
-	else
-	{
-		std::cout << "User not found!: " << user << std::endl;
-		return std::string("");
-	}
-}
-
-int32_t GetColor(const Changelist &cl)
-{
-	bool bHasEdit = false;
-	bool bHasAdd = false;
-	bool bHasDelete = false;
-
-	for (const auto& file : cl.files)
-	{
-		if (file.action == "edit")
-			bHasEdit = true;
-		else if (file.action == "add")
-			bHasAdd = true;
-		else
-			bHasDelete = true;
-	}
-
-	// Discord embed uses decimal colours, so I thought this was a pretty cool way to solve that
-	return ((bHasEdit ? 1 : 0) * 255) + ((bHasAdd ? 1 : 0) * 65280) + ((bHasDelete ? 1 : 0) * 16711680);
-}
-
-int32_t GetColor(const FileData &file)
-{
-	if (file.action == "edit")
-		return 255;
-	else if (file.action == "add")
-		return 65280;
-	else
-		return 16711680;
 }
 
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs)

@@ -173,6 +173,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Helpers.h" />
     <ClInclude Include="include\json.hpp" />
     <ClInclude Include="include\p4\base64.h" />
     <ClInclude Include="include\p4\charcvt.h" />
