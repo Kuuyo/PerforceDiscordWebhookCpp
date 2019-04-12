@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 
 		SendWebhookMessage(cu, unsyncedChangelists);
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(60000));
+		std::this_thread::sleep_for(std::chrono::milliseconds(180000));
 	}
 
 	Close(client, e, msg);
@@ -259,8 +259,6 @@ void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_
 {
 	char* filterPath = GetEnv("P4FILTERPATH");
 
-	// TODO: REVERSE THE ORDER
-
 	// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_changes.html
 	char *changelistArg[] = { (char*)"-l", (char*)"-m", (char*)std::to_string(nrOfChngLsts).c_str(), (char*)"-s", (char*)"submitted", (char*)"-t", filterPath };
 	int changelistC = 7;
@@ -309,8 +307,6 @@ void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<s
 
 void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::string> &changeListNrs, std::vector<std::string> &unsyncedNrs)
 {
-	// TODO: THIS MIGHT NEED CHANGING TOO WHEN REVERSED
-
 	std::vector<char> file = ReadFile(cacheFileName);
 
 	if (file.size() != 0)
@@ -890,6 +886,8 @@ int32_t GetColor(const FileData &file)
 
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs)
 {
+	std::reverse(changelistStructs.begin(), changelistStructs.end());
+
 	for (const auto &cl : changelistStructs)
 	{
 		json message{};
