@@ -850,7 +850,7 @@ std::string GetUserImage(const std::string &user)
 	else
 	{
 		std::cout << "User not found!: " << user << std::endl;
-		return std::string();
+		return std::string("");
 	}
 }
 
