@@ -241,7 +241,7 @@
     <ClInclude Include="include\p4\web822.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="PerforceDiscordWebhookCpp.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
