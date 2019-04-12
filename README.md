@@ -55,3 +55,8 @@ I recommend you add a stylesheet called 'styles.css', [this is the one I wrote t
     - U3ICON
     - U4ICON
     - U5ICON
+
+Credits:
+### Include folder contains [headers supplied by Perforce](PerforceDiscordWebhookCpp/include/p4) from [C/C++ API](https://www.perforce.com/downloads/helix-core-c/c-api)
+### Include folder also contains [json.hpp](PerforceDiscordWebhookCpp/include/json.hpp) by [nlohmann](https://github.com/nlohmann/)
+### Lib folder contains [libs supplied by Perforce](PerforceDiscordWebhookCpp/lib) from [C/C++ API](https://www.perforce.com/downloads/helix-core-c/c-api)
