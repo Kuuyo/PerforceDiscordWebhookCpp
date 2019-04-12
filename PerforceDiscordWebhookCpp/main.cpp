@@ -8,7 +8,7 @@
 
 #include "include/p4/clientapi.h"
 #include "include/json.hpp"
-#include "Helpers.h"
+#include "helpers.h"
 
 using json = nlohmann::json;
 
@@ -45,36 +45,12 @@ private:
 struct FileData;
 struct Changelist;
 
-#pragma region forwardDeclFuncs
+#pragma region ForwardDeclMain
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc);
 
 void CheckAndGetGithubRepo(std::string &path);
 
 void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path, std::vector<Changelist> &changelistStructs);
-
-void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
-
-void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs);
-
-void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::string> &changeListNrs, std::vector<std::string> &unsyncedNrs);
-
-void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs);
-
-void ParseChangelists(ClientUserEx &cu, ClientApi &client, const std::string &path, std::vector<Changelist> &changelistStructs);
-
-void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
-
-void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::string &path, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
-
-void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles);
-
-void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, FileData &fileData);
-
-void CreateDiffHTML(std::vector<std::string> &diffVec, const std::string &path, const Changelist &clStrct, FileData &fileData);
-
-void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out);
-
-void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData);
 
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs);
 
@@ -121,6 +97,33 @@ void ClientUserEx::OutputText(const char *data, int)
 	m_Data.append(data);
 	m_Data.push_back('\n');
 }
+
+#pragma region ForwardDecl
+void GetLatestChangeListsFromServer(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts);
+
+void ExtractChangelistNrs(ClientUserEx &cu, uint16_t nrOfChngLsts, std::vector<std::string> &changeListNrs);
+
+void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::string> &changeListNrs, std::vector<std::string> &unsyncedNrs);
+
+void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs);
+
+void ParseChangelists(ClientUserEx &cu, ClientApi &client, const std::string &path, std::vector<Changelist> &changelistStructs);
+
+void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists);
+
+void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::string &path, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs);
+
+void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles);
+
+void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, FileData &fileData);
+
+void CreateDiffHTML(std::vector<std::string> &diffVec, const std::string &path, const Changelist &clStrct, FileData &fileData);
+
+void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out);
+
+void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData);
+#pragma endregion
+
 
 void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 {

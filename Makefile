@@ -1,6 +1,6 @@
 CC=g++
 LIBS = -LPerforceDiscordWebhookCpp/lib -lclient -lrpc -lsupp -lssl -lcrypto
-DEPS = PerforceDiscordWebhookCpp/Helpers.h
+DEPS = PerforceDiscordWebhookCpp/helpers.h
 
 PDWCpp: PerforceDiscordWebhookCpp/main.o HerokuSSLFix/libstub.a $(DEPS)
 	$(CC) -o PDW PerforceDiscordWebhookCpp/main.o $(LIBS) -LHerokuSSLFix/ -lstub
