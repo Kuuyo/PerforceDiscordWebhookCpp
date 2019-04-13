@@ -252,46 +252,32 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 	if (file.size() != 0)
 	{
 		std::string cachedNr;
-		std::vector<std::string> cachedNrs;
+
 		for (const auto &c : file)
 		{
-			if (c != '\n')
-				cachedNr.push_back(c);
-			else
-			{
-				cachedNr.push_back(c);
-				cachedNrs.push_back(cachedNr);
-				cachedNr = "";
-			}
+			cachedNr.push_back(c);
 		}
 
 		size_t equalIndex = changeListNrs.size();
 
 		for (size_t i = 0; i < changeListNrs.size(); ++i)
 		{
-			for (size_t j = 0; j < cachedNrs.size(); ++j)
-			{
-				int clNr = std::stoi(changeListNrs[j]);
-				int caNr = std::stoi(cachedNrs[i]);
+			int clNr = std::stoi(changeListNrs[i]);
+			int caNr = std::stoi(cachedNr);
 
-				if (clNr > caNr)
-				{
-					continue;
-				}
-				else if (clNr == caNr)
-				{
-					equalIndex = j;
-					break;
-				}
-				else
-				{
-					std::cout << "WARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n";
-				}
-			}
-			if (equalIndex < changeListNrs.size())
+			if (clNr > caNr)
 			{
+				continue;
+			}
+			else if (clNr == caNr)
+			{
+				equalIndex = i;
 				break;
 			}
+			else
+			{
+				std::cout << "WARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n";
+			} 
 		}
 
 		for (size_t i = 0; i < equalIndex; ++i)
@@ -310,8 +296,6 @@ void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std
 	for (auto clId : unsyncedNrs)
 	{
 		clId.pop_back(); // Giving newline to the command makes it fail
-
-		// clId = "69183"; // TODO: REMOVE THIS
 
 		// More info: https://www.perforce.com/manuals/cmdref/Content/CmdRef/p4_describe.html
 		// Added -s here, as diffs will be handled later instead of them being dragged all the way from here
