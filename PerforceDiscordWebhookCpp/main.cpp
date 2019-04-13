@@ -280,7 +280,7 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 
 		if (!bEqualFound)
 		{
-			std::cout << "WARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n";
+			std::cout << "\nWARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n";
 		}
 
 		for (size_t i = 0; i < equalIndex; ++i)
