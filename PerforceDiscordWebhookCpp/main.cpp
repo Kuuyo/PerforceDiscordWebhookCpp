@@ -259,6 +259,7 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 		}
 
 		size_t equalIndex = changeListNrs.size();
+		bool bEqualFound = false;
 
 		for (size_t i = 0; i < changeListNrs.size(); ++i)
 		{
@@ -271,13 +272,15 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 			}
 			else if (clNr == caNr)
 			{
+				bEqualFound = true;
 				equalIndex = i;
 				break;
-			}
-			else
-			{
-				std::cout << "WARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n";
-			} 
+			}			
+		}
+
+		if (!bEqualFound)
+		{
+			std::cout << "WARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n";
 		}
 
 		for (size_t i = 0; i < equalIndex; ++i)
