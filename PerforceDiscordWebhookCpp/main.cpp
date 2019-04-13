@@ -58,6 +58,8 @@ void Close(ClientApi &client, Error &e, StrBuf &msg);
 #pragma endregion
 
 ///////////////////////////////////////////////////////////////////////
+WebhookWarning* m_Warnings = new WebhookWarning();
+
 int main(int argc, char* argv[])
 {
 	ClientUserEx cu;
@@ -73,6 +75,8 @@ int main(int argc, char* argv[])
 	while (true)
 	{
 		CheckForUnsyncedChangeLists(cu, client, 5, path);
+
+		m_Warnings->SendWarnings();
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(180000));
 	}
@@ -280,7 +284,7 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 
 		if (!bEqualFound)
 		{
-			std::cout << "\nWARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n";
+			m_Warnings->StoreWarning("\nWARNING: Changes possibly missed > Consider increasing number of changelists or check interval\n\n");
 		}
 
 		for (size_t i = 0; i < equalIndex; ++i)
@@ -391,7 +395,9 @@ void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 		}
 		else
 		{
-			std::cout << "WARNING: Could not parse file: " << fileStr << std::endl;
+			std::string wrng("\nWARNING: Could not parse file: ");
+			wrng.append(fileStr);
+			m_Warnings->StoreWarning(wrng);
 			continue;
 		}
 
@@ -422,7 +428,9 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 	}
 	else
 	{
-		std::cout << "WARNING: Error parsing diff:\n" << diff << std::endl;
+		std::string wrng("\nWARNING: Error parsing diff:\n");
+		wrng.append(diff);
+		m_Warnings->StoreWarning(wrng);
 	}
 
 	std::string line;

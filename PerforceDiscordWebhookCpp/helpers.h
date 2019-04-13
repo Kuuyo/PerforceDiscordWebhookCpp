@@ -306,3 +306,60 @@ int32_t GetColor(const FileData &file)
 		return 16711680;
 }
 #pragma endregion
+
+class WebhookWarning
+{
+public:
+	WebhookWarning() = default;
+	~WebhookWarning() {}
+
+	void StoreWarning(const std::string &wrngMsg)
+	{
+		std::cout << wrngMsg << std::endl;
+		m_Warnings.push_back(wrngMsg);
+	}
+
+	void SendWarnings()
+	{
+		if (m_Warnings.size() > 0)
+		{
+			json message{};
+
+#ifdef _WIN32
+			message["username"] = "Perforce C++ Bot";
+#else
+			message["username"] = "Perforce C++ Bot Heroku";
+#endif		
+			message["content"] = "Warnings:";
+
+			message["avatar_url"] = GetEnv("P4AVATAR");
+
+			for (const auto &wrng: m_Warnings)
+			{
+				message["embeds"].push_back(
+					{
+						{"title", "WARNING"},
+						{"description", wrng},
+						{"color", 16711680}
+					}
+				);
+			}
+
+			std::string jsonStr = message.dump();
+
+			WriteFile(jsonStr, "warnings.json");
+
+			std::string webhookCommand("curl -s -S -H \"Content-Type:application/json;charset=UTF-8\" -X POST -d @");
+			webhookCommand.append("warnings.json");
+			webhookCommand += ' ';
+
+			char* discordWebHook = GetEnv("DISCORDWEBHOOK");
+			webhookCommand.append(discordWebHook);
+
+			system(webhookCommand.c_str());
+		}
+	}
+
+private:
+	std::vector<std::string> m_Warnings;
+};
