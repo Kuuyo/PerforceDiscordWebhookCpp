@@ -50,7 +50,7 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 
 void CheckAndGetGithubRepo(std::string &path);
 
-void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path, std::vector<Changelist> &changelistStructs);
+void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path);
 
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs);
 
@@ -72,10 +72,7 @@ int main(int argc, char* argv[])
 
 	while (true)
 	{
-		std::vector<Changelist> unsyncedChangelists;
-		CheckForUnsyncedChangeLists(cu, client, 5, path, unsyncedChangelists);
-
-		SendWebhookMessage(cu, unsyncedChangelists);
+		CheckForUnsyncedChangeLists(cu, client, 5, path);
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(180000));
 	}
@@ -183,7 +180,7 @@ void CheckAndGetGithubRepo(std::string &path)
 	system(GitCommandHelper(path, " pull").c_str());
 }
 
-void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path, std::vector<Changelist> &changelistStructs)
+void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path)
 {	
 	GetLatestChangeListsFromServer(cu, client, nrOfChngLsts);
 
@@ -191,17 +188,35 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 	ExtractChangelistNrs(cu, nrOfChngLsts, changeListNrs);
 
 	std::string cacheFileName("cl.txt");
+	std::string cacheFilePath(path);
+	cacheFilePath.append(cacheFileName);
 	
 	std::vector<std::string> unsyncedNrs;
-	FetchUnsyncedNrs(cacheFileName, changeListNrs, unsyncedNrs);
+	FetchUnsyncedNrs(cacheFilePath, changeListNrs, unsyncedNrs);
 
 	if (unsyncedNrs.size() > 0)
 	{
-		WriteFile(unsyncedNrs, cacheFileName);
+		// Only the very latest number
+		WriteFile(unsyncedNrs[0], cacheFilePath);
 
+		// Add the cache file to the repo
+		// TODO: Only do this if it's needed
+		std::string command(" add ");
+		command.append(cacheFileName);
+
+		system(GitCommandHelper(path, command).c_str());
+
+		system(GitCommandHelper(path, " commit -m heroku").c_str());
+
+		//
 		GetDescriptionsOfChangelists(cu, client, unsyncedNrs);
 
+		std::vector<Changelist> changelistStructs;
 		ParseChangelists(cu, client, path, changelistStructs);
+
+		SendWebhookMessage(cu, changelistStructs);
+
+		std::cout << "Sync complete." << std::endl;
 	}
 	else
 	{
