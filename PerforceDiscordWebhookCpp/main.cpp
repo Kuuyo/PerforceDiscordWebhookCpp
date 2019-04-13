@@ -658,6 +658,9 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 		char* discordWebHook = GetEnv("DISCORDWEBHOOK");
 		webhookCommand.append(discordWebHook);
 
+		// Just to counter rate limit a little ..
+		// TODO: Do this properly
+		std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 		system(webhookCommand.c_str());
 	}
 }
