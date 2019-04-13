@@ -8,9 +8,10 @@
 
 #include "include/p4/clientapi.h"
 #include "include/json.hpp"
-#include "helpers.h"
 
 using json = nlohmann::json;
+
+#include "helpers.h"
 
 #ifdef _WIN32
 #pragma comment(lib, "libclient.lib")
