@@ -413,7 +413,7 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 	if (std::regex_search(diff, sm, rgx))
 	{
 		fileData.type = sm[1];
-		if (fileData.action != "edit")
+		if (fileData.action != "edit" || fileData.type == "binary+F")
 			return;
 		diff = sm[2];
 	}
@@ -630,7 +630,7 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 					{"title", file.action + " " + file.type},
 					{"description", file.GetCurrentRevString()},
 					{"color", GetColor(file)},
-					{"url", ((file.action != "edit") ? "" : GetEnv("GITHUBPAGESFULLPATH") + file.GetStringNoPath())}
+					{"url", ((file.action != "edit" && file.type == "binary+F") ? "" : GetEnv("GITHUBPAGESFULLPATH") + file.GetStringNoPath())}
 				}
 			);
 		}
