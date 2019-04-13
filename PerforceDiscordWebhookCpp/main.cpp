@@ -78,6 +78,7 @@ int main(int argc, char* argv[])
 		CheckForUnsyncedChangeLists(cu, client, 5, path);
 
 		m_Warnings->SendWarnings();
+		m_Warnings->Clear();
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(180000));
 	}

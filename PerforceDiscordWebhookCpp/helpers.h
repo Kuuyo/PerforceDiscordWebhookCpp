@@ -360,6 +360,8 @@ public:
 		}
 	}
 
+	void Clear() { m_Warnings.clear(); }
+
 private:
 	std::vector<std::string> m_Warnings;
 };
