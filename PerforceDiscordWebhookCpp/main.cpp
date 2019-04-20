@@ -327,6 +327,7 @@ void ParseChangelists(ClientUserEx &cu, ClientApi &client, const std::string &pa
 {
 	std::vector<std::string> changelists;
 	ExtractChangelists(cu, changelists);
+	std::cout << "Extracted changelists." << std::endl;
 	
 	StoreChangelistsDataInStruct(cu, client, path, changelists, changelistStructs);
 }
@@ -374,9 +375,9 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 		changelistStructs.push_back(clStrct);
 	}
 
-	system(GitCommandHelper(path, " commit -m heroku").c_str());
+	std::cout << "Changelist structs parsed, commiting and pushing changes." << std::endl;
 
-	std::cout << "Changelist structs parsed, pushing changes." << std::endl;
+	system(GitCommandHelper(path, " commit -m heroku").c_str());
 
 	system(GitCommandHelper(path, " push").c_str());
 }
