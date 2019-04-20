@@ -187,12 +187,12 @@ void CheckAndGetGithubRepo(std::string &path)
 
 	system(GitCommandHelper(path, " pull").c_str());
 
-	std::cout << "\nEnd of Checking Github Pages repo.\n";
+	std::cout << "End of Checking Github Pages repo." << std::endl;
 }
 
 void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t nrOfChngLsts, const std::string &path)
 {	
-	std::cout << "\nChecking for recent changes.\n";
+	std::cout << "Checking for recent changes." << std::endl;
 
 	GetLatestChangeListsFromServer(cu, client, nrOfChngLsts);
 
@@ -208,7 +208,7 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 
 	if (unsyncedNrs.size() > 0)
 	{
-		std::cout << "\nChanges found.\n";
+		std::cout << "Changes found." << std::endl;
 		// Only the very latest number
 		WriteFile(unsyncedNrs[0], cacheFilePath);
 
@@ -220,10 +220,10 @@ void CheckForUnsyncedChangeLists(ClientUserEx &cu, ClientApi &client, uint16_t n
 		system(GitCommandHelper(path, command).c_str());
 		//
 
-		std::cout << "\n\tGetting descriptions.\n";
+		std::cout << "Getting descriptions." << std::endl;
 		GetDescriptionsOfChangelists(cu, client, unsyncedNrs);
 
-		std::cout << "\n\tParsing changelists.\n";
+		std::cout << "Parsing changelists." << std::endl;
 		std::vector<Changelist> changelistStructs;
 		ParseChangelists(cu, client, path, changelistStructs);
 
@@ -376,7 +376,7 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 
 	system(GitCommandHelper(path, " commit -m heroku").c_str());
 
-	std::cout << "\t> Changelist structs parsed, pushing changes.\n";
+	std::cout << "Changelist structs parsed, pushing changes." << std::endl;
 
 	system(GitCommandHelper(path, " push").c_str());
 }
