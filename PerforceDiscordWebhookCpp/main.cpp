@@ -454,8 +454,9 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 	}
 	else
 	{
+		std::cout << ">>> Regex failed." << std::endl;
 		std::string wrng("WARNING: Error parsing diff:");
-		wrng.append(diff);
+		wrng.append(fileData.GetCurrentRevString());
 		m_Warnings->StoreWarning(wrng);
 	}
 
