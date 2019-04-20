@@ -417,7 +417,7 @@ void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 		}
 		else
 		{
-			std::string wrng("\nWARNING: Could not parse file: ");
+			std::string wrng("WARNING: Could not parse file: ");
 			wrng.append(fileStr);
 			m_Warnings->StoreWarning(wrng);
 			continue;
@@ -448,7 +448,7 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 	}
 	else
 	{
-		std::string wrng("\nWARNING: Error parsing diff:\n");
+		std::string wrng("WARNING: Error parsing diff:");
 		wrng.append(diff);
 		m_Warnings->StoreWarning(wrng);
 	}
