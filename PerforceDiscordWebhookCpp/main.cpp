@@ -618,9 +618,9 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 					}
 				},
 				{"color", GetColor(cl)},
-				{"title", cl.description},
+				{"description", cl.description},
 				{"url", GetEnv("EMBEDURL")},
-				{"description", cl.workspace},
+				{"title", cl.workspace},
 				{"thumbnail",
 					{
 						{"url",GetEnv("EMBEDTHUMB")}
@@ -643,7 +643,7 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 					{"title", file.action + " " + file.type},
 					{"description", file.GetCurrentRevString()},
 					{"color", GetColor(file)},
-					{"url", ((file.action != "edit" && file.type == "binary+F") ? "" : GetEnv("GITHUBPAGESFULLPATH") + file.GetStringNoPath())}
+					{"url", ((file.action != "edit" || file.type == "binary+F") ? "" : GetEnv("GITHUBPAGESFULLPATH") + file.GetStringNoPath())}
 				}
 			);
 		}
