@@ -445,7 +445,10 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 	std::smatch sm;
 
 	std::cout << ">>> Parsing diff type. " << std::endl;
-	if (std::regex_search(diff, sm, rgx))
+	std::stringstream diffstream(diff);
+	std::string header;
+	std::getline(diffstream, header);
+	if (std::regex_search(header, sm, rgx))
 	{
 		fileData.type = sm[1];
 		std::cout << ">>>> Diff type: " << fileData.type << std::endl;
