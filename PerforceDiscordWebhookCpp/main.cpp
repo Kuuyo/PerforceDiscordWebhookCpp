@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
 	Login(cu, client, e, msg, argc);
 
 	std::string path;
-	CheckAndGetGithubRepo(path);
+	//CheckAndGetGithubRepo(path);
 
 	while (true)
 	{
