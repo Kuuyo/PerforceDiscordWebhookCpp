@@ -441,7 +441,7 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 	std::string diff(cu.GetData());
 	cu.ClearBuffer();
 
-	std::regex rgx("(?:^==== .+?-.+?\\()(.+?)(?:\\) ==== .+?\\n)([\\s\\S]*)");
+	std::regex rgx("(?:^==== .+?-.+?\\()(.+?)(?:\\) ==== .+?)");
 	std::smatch sm;
 
 	std::cout << ">>> Parsing diff type. " << std::endl;
