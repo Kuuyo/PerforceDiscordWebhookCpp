@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
 	Login(cu, client, e, msg, argc);
 
 	std::string path;
-	//CheckAndGetGithubRepo(path);
+	CheckAndGetGithubRepo(path);
 
 	while (true)
 	{
@@ -146,7 +146,7 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 		exit(1);
 	}
 
-	std::cout << "\nLogin passed.\n";
+	std::cout << "Login passed." << std::endl;
 }
 
 void CheckAndGetGithubRepo(std::string &path)
