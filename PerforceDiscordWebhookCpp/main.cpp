@@ -447,6 +447,7 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 	if (std::regex_search(diff, sm, rgx))
 	{
 		fileData.type = sm[1];
+		std::cout << ">>> Diff type: " << fileData.type << std::endl;
 		if (fileData.action != "edit" || fileData.type == "binary+F")
 			return;
 		diff = sm[2];
