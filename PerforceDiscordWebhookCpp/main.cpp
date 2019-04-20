@@ -145,6 +145,8 @@ void Login(ClientUserEx &cu, ClientApi &client, Error &e, StrBuf &msg, int argc)
 		fprintf(stderr, "%s\n", msg.Text());
 		exit(1);
 	}
+
+	std::cout << "\nLogin passed.\n";
 }
 
 void CheckAndGetGithubRepo(std::string &path)
