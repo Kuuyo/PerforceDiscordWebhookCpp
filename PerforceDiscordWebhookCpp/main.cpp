@@ -353,32 +353,32 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 		std::regex rgx("(^Change )([0-9]+)");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.id = std::stoi(data);
-		std::cout << "ID stored." << std::endl;
+		std::cout << "> ID stored." << std::endl;
 
 		rgx = ("(by )(.+)(@)");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.author = data;
-		std::cout << "Author stored." << std::endl;
+		std::cout << "> Author stored." << std::endl;
 
 		rgx = ("(@)(.+)( on )");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.workspace = data;
-		std::cout << "Worspace stored." << std::endl;
+		std::cout << "> Worspace stored." << std::endl;
 
 		rgx = ("( on )(.+)($)");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.timestamp = std::regex_replace(data, std::regex("/"), "-");
-		std::cout << "Timestamp stored." << std::endl;
+		std::cout << "> Timestamp stored." << std::endl;
 
 		rgx = ("(^\\t)(.+)($)");
 		ExtractMultiLineDataFullString(cl, rgx, data);
 		clStrct.description = data;
-		std::cout << "Description stored." << std::endl;
+		std::cout << "> Description stored." << std::endl;
 
 		std::vector<FileData> files;
 		ParseFiles(cu, client, path, clStrct, cl, files);
 		clStrct.files = files;
-		std::cout << "File data stored." << std::endl;
+		std::cout << "> File data stored." << std::endl;
 
 		changelistStructs.push_back(clStrct);
 	}
@@ -392,6 +392,7 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 
 void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, const Changelist &clStrct, const std::string &cl, std::vector<FileData> &outFiles)
 {
+	std::cout << ">> Parsing files." << std::endl;
 	std::string filterPath(GetEnv("P4FILTERPATH"));
 	filterPath = filterPath.substr(0, filterPath.size() - 3); // As a filterpath ends in 3 dots
 
@@ -422,6 +423,8 @@ void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 			m_Warnings->StoreWarning(wrng);
 			continue;
 		}
+
+		std::cout << ">> Parsing diff for " << fileData.fileName << std::endl;
 
 		ParseDiffs(cu, client, path, clStrct, fileData);
 
