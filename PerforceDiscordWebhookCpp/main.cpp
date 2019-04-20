@@ -367,6 +367,8 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 		changelistStructs.push_back(clStrct);
 	}
 
+	std::cout << "Changelist structs parsed, pushing changes.\n";
+
 	system(GitCommandHelper(path, " push").c_str());
 }
 
