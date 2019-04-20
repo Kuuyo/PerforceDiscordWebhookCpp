@@ -363,7 +363,7 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 		rgx = ("(@)(.+)( on )");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.workspace = data;
-		std::cout << "> Worspace stored." << std::endl;
+		std::cout << "> Workspace stored." << std::endl;
 
 		rgx = ("( on )(.+)($)");
 		ExtractSingleLineData(cl, rgx, data);
@@ -436,6 +436,8 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 {
 	GetDiff(cu, client, fileData);
 
+	std::cout << ">>> Fetched diff. " << std::endl;
+
 	std::string diff(cu.GetData());
 	cu.ClearBuffer();
 
@@ -465,7 +467,9 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 		diffVec.push_back(line);
 	}
 
+	std::cout << ">>> Creating diff html. " << std::endl;
 	CreateDiffHTML(diffVec, path, clStrct, fileData);
+	std::cout << ">>> Diff html created. " << std::endl;
 }
 
 void CreateDiffHTML(std::vector<std::string> &diffVec, const std::string &path, const Changelist &clStrct, FileData &fileData)
