@@ -342,6 +342,8 @@ void ExtractChangelists(ClientUserEx &cu, std::vector<std::string> &changelists)
 
 void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std::string &path, const std::vector<std::string> &changelists, std::vector<Changelist> &changelistStructs)
 {
+	std::cout << "Storing changelist data." << std::endl;
+
 	for (const std::string &cl : changelists)
 	{
 		Changelist clStrct;
@@ -351,26 +353,32 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 		std::regex rgx("(^Change )([0-9]+)");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.id = std::stoi(data);
+		std::cout << "ID stored." << std::endl;
 
 		rgx = ("(by )(.+)(@)");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.author = data;
+		std::cout << "Author stored." << std::endl;
 
 		rgx = ("(@)(.+)( on )");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.workspace = data;
+		std::cout << "Worspace stored." << std::endl;
 
 		rgx = ("( on )(.+)($)");
 		ExtractSingleLineData(cl, rgx, data);
 		clStrct.timestamp = std::regex_replace(data, std::regex("/"), "-");
+		std::cout << "Timestamp stored." << std::endl;
 
 		rgx = ("(^\\t)(.+)($)");
 		ExtractMultiLineDataFullString(cl, rgx, data);
 		clStrct.description = data;
+		std::cout << "Description stored." << std::endl;
 
 		std::vector<FileData> files;
 		ParseFiles(cu, client, path, clStrct, cl, files);
 		clStrct.files = files;
+		std::cout << "File data stored." << std::endl;
 
 		changelistStructs.push_back(clStrct);
 	}
@@ -600,6 +608,8 @@ void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData)
 
 void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStructs)
 {
+	std::cout << "Sending webhooks." << std::endl;
+
 	std::reverse(changelistStructs.begin(), changelistStructs.end());
 
 	for (const auto &cl : changelistStructs)
