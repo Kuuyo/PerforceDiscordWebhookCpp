@@ -423,10 +423,12 @@ void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 			m_Warnings->StoreWarning(wrng);
 			continue;
 		}
-
-		std::cout << ">> Parsing diff for " << fileData.fileName << std::endl;
-
-		ParseDiffs(cu, client, path, clStrct, fileData);
+		
+		if (fileData.action != "move/delete")
+		{
+			std::cout << ">> Parsing diff for " << fileData.fileName << std::endl;
+			ParseDiffs(cu, client, path, clStrct, fileData);
+		}
 
 		outFiles.push_back(fileData);
 	}
@@ -462,6 +464,7 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 		std::string wrng("WARNING: Error parsing diff:");
 		wrng.append(fileData.GetCurrentRevString());
 		m_Warnings->StoreWarning(wrng);
+		return;
 	}
 
 	std::string line;
