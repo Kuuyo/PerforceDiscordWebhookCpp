@@ -454,7 +454,7 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 		std::cout << ">>>> Diff type: " << fileData.type << std::endl;
 		if (fileData.action != "edit" || fileData.type == "binary+F")
 			return;
-		diff = sm[2];
+		diff = diff.substr(header.length() + 1);
 	}
 	else
 	{
@@ -593,11 +593,10 @@ void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out)
 
 	diffVec.erase(std::remove(diffVec.begin(), diffVec.end(), ""), diffVec.end());
 
-	const char* const delim = "\n";
-	std::ostringstream cat;
-	std::copy(diffVec.begin(), diffVec.end(), std::ostream_iterator<std::string>(cat, delim));
-
-	out = cat.str();
+	for (const std::string& s : diffVec)
+	{
+		out += s;
+	}
 }
 
 void GetDiff(ClientUserEx &cu, ClientApi &client, FileData &fileData)
