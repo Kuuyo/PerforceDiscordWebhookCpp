@@ -467,6 +467,22 @@ void ParseDiffs(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 		return;
 	}
 
+	size_t pos = 0;
+	while ((pos = diff.find_first_of("<>",pos)) != std::string::npos)
+	{
+		switch (diff.at(pos))
+		{
+		case '<':
+			diff.replace(pos, 1, "&lt;");
+			break;
+		case '>':
+			diff.replace(pos, 1, "&gt;");
+			break;
+		default:
+			break;
+		}
+	}
+
 	std::string line;
 	std::istringstream stream(diff);
 	std::vector<std::string> diffVec;
@@ -586,7 +602,7 @@ void DiffInfoToHTML(std::vector<std::string> &diffVec, std::string &out)
 		{
 			if (diffVec[i].size() > 0)
 			{
-				diffVec[lastHeadIndex] += "\n" + diffVec[i].substr(1);
+				diffVec[lastHeadIndex] += "\n" + diffVec[i].substr(4);
 				diffVec[i] = "";
 			}
 		}
