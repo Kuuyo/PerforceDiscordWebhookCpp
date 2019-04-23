@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 
 	while (true)
 	{
-		CheckForUnsyncedChangeLists(cu, client, 5, path);
+		CheckForUnsyncedChangeLists(cu, client, 10, path);
 
 		m_Warnings->SendWarnings();
 		m_Warnings->Clear();
