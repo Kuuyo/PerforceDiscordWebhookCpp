@@ -424,7 +424,7 @@ void ParseFiles(ClientUserEx &cu, ClientApi &client, const std::string &path, co
 			continue;
 		}
 		
-		if (fileData.action != "move/delete")
+		if (fileData.action != "move/delete" && fileData.action != "delete")
 		{
 			std::cout << ">> Parsing diff for " << fileData.fileName << std::endl;
 			ParseDiffs(cu, client, path, clStrct, fileData);
