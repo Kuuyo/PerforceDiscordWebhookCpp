@@ -271,19 +271,22 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 			cachedNr.push_back(c);
 		}
 
+		std::cout << "Most recently synced list: " << cachedNr << std::endl;
+
 		size_t equalIndex = changeListNrs.size();
 		bool bEqualFound = false;
 
+		int caNr = std::stoi(cachedNr);
+
 		for (size_t i = 0; i < changeListNrs.size(); ++i)
 		{
-			int clNr = std::stoi(changeListNrs[i]);
-			int caNr = std::stoi(cachedNr);
+			int clNr = std::stoi(changeListNrs[i]);		
 
 			if (clNr > caNr)
 			{
 				continue;
 			}
-			else if (clNr == caNr)
+			else
 			{
 				bEqualFound = true;
 				equalIndex = i;
@@ -305,6 +308,8 @@ void FetchUnsyncedNrs(const std::string &cacheFileName, const std::vector<std::s
 	{
 		unsyncedNrs = changeListNrs;
 	}
+
+	std::cout << "Number of unsynced lists: " << unsyncedNrs.size() << std::endl;
 }
 
 void GetDescriptionsOfChangelists(ClientUserEx &cu, ClientApi &client, const std::vector<std::string> &unsyncedNrs)

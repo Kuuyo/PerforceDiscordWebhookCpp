@@ -44,17 +44,13 @@ I recommend you add a stylesheet called 'styles.css', [this is the one I wrote t
       - This and the next are used so git knows who you are
       - It is basically your git config user.name and user.email
     - USERFULLNAME : Your full name
-3. My Perforce changelists could only belong to a set of 5 people, so there's also these Config Vars, might be changed in the future
+	- USERCOUNT : Number of users that have an icon (remember to fill in 0 if you don't want to use this feature)
+
+3. If you want to give your team members an icon (THESE ARE THE ONLY ONES NOT REQUIRED)
     - USER1 : Perforce username of one of the changelist authors
-    - USER2
-    - USER3
-    - USER4
-    - USER5
+	- USER2 : Perforce username of one of the changelist authors
     - U1ICON : An image for user 1
-    - U2ICON
-    - U3ICON
-    - U4ICON
-    - U5ICON
+	- U2ICON : An image for user 2
 
 Credits:
 - Some of the code is recycled from my previous two attempts at accomplishing this in [Ruby](https://github.com/Kuuyo/PerforceDiscordWebhook) and [.NET](https://github.com/Kuuyo/PerforceDiscordWebhookNET)

@@ -247,31 +247,22 @@ void ExtractMultiLineDataFullString(const std::string &data, const std::regex &r
 // Returns the user image for the user
 std::string GetUserImage(const std::string &user)
 {
-	if (user == GetEnv("USER1"))
+	for (size_t i = 1; i <= atoi(GetEnv("USERCOUNT")); ++i)
 	{
-		return GetEnv("U1ICON");
+		std::string userE{ "USER" };
+		userE.append(std::to_string(i));
+
+		std::string icon{ "UICON" };
+		icon.insert(1, std::to_string(i));
+
+		if (user == GetEnv(userE.c_str()))
+		{
+			return GetEnv(icon.c_str());
+		}
 	}
-	else if (user == GetEnv("USER2"))
-	{
-		return GetEnv("U2ICON");
-	}
-	else if (user == GetEnv("USER3"))
-	{
-		return GetEnv("U3ICON");
-	}
-	else if (user == GetEnv("USER4"))
-	{
-		return GetEnv("U4ICON");
-	}
-	else if (user == GetEnv("USER5"))
-	{
-		return GetEnv("U5ICON");
-	}
-	else
-	{
-		std::cout << "User not found!: " << user << std::endl;
-		return std::string("");
-	}
+
+	std::cout << "User not found!: " << user << std::endl;
+	return std::string("");
 }
 
 // Returns a color in decimal form according to what actions were carried out on the files
