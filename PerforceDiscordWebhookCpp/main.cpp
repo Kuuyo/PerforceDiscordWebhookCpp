@@ -382,6 +382,7 @@ void StoreChangelistsDataInStruct(ClientUserEx &cu, ClientApi &client, const std
 
 		std::vector<FileData> files;
 		ParseFiles(cu, client, path, clStrct, cl, files);
+		std::sort(files.begin(), files.end(), [](const FileData &data1, const FileData &data2) { return data1.action + " " + data1.type < data2.action + " " + data2.type; });
 		clStrct.files = files;
 		std::cout << "> File data stored." << std::endl;
 
@@ -692,16 +693,38 @@ void SendWebhookMessage(ClientUserEx &cu, std::vector<Changelist> &changelistStr
 			}
 		};
 
+		json embed;
+		std::string previousAction;
+
 		for (auto file : cl.files)
 		{
-			message["embeds"].push_back(
+			if (previousAction != (file.action + " " + file.type))
+			{
+				if (!embed.empty())
+				{
+					message["embeds"].push_back(embed);
+				}
+
+				embed =
 				{
 					{"title", file.action + " " + file.type},
-					{"description", file.GetCurrentRevString()},
 					{"color", GetColor(file)},
-					{"url", ((file.action != "edit" || file.type == "binary+F") ? "" : GetEnv("GITHUBPAGESFULLPATH") + file.GetStringNoPath())}
+				};				
+			}
+
+			embed["fields"].push_back(
+				{
+					{"name", file.GetCurrentRevString()},
+					{"value", ((file.action != "edit" || (file.type.find("binary") != std::string::npos)) ? "No diff available" : std::string("[Diff](") + GetEnv("GITHUBPAGESFULLPATH") + file.GetStringNoPath() + ")")}
 				}
 			);
+
+			previousAction = file.action + " " + file.type;
+		}
+
+		if (!embed.empty())
+		{
+			message["embeds"].push_back(embed);
 		}
 
 		std::string jsonStr = message.dump();
